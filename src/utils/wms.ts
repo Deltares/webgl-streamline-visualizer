@@ -1,3 +1,4 @@
+import type { GetCapabilitiesResponse } from '@deltares/fews-wms-requests'
 import * as GeoTIFF from 'geotiff'
 
 import { Color, Colormap } from './colormap'
@@ -70,31 +71,34 @@ export async function fetchWMSColormap(
 
 export async function fetchWMSAvailableTimesAndElevations(
   baseUrl: string,
-  layer: string,
+  layerName: string,
   signal?: AbortSignal
 ): Promise<{ times: string[]; elevationBounds: [number, number] | null }> {
   const url = new URL(baseUrl)
   url.searchParams.append('request', 'GetCapabilities')
   url.searchParams.append('format', 'application/json')
   url.searchParams.append('version', '1.3')
-  url.searchParams.append('layers', layer)
+  url.searchParams.append('layers', layerName)
 
   const response = await fetch(url, { signal })
-  const capabilities = await response.json()
+  const capabilities = (await response.json()) as GetCapabilitiesResponse
 
-  console.assert(
-    capabilities.layers !== undefined && capabilities.layers.length === 1
-  )
+  const layer = capabilities.layers?.[0]
+  if (!layer) {
+    throw new Error('WMS GetCapabilities response contains no layers.')
+  }
+  if (!layer.times) {
+    throw new Error('WMS GetCapabilities response contains no times.')
+  }
+
+  const lowerElevation = layer.elevation?.lowerValue
+  const upperElevation = layer.elevation?.upperValue
   const elevationBounds = (
-    capabilities.layers[0].elevation !== undefined
-      ? [
-          +capabilities.layers[0].elevation.lowerValue,
-          +capabilities.layers[0].elevation.upperValue
-        ]
-      : null
+    lowerElevation && upperElevation ? [+lowerElevation, +upperElevation] : null
   ) as [number, number] | null
+
   return {
-    times: capabilities.layers[0].times,
+    times: layer.times,
     elevationBounds: elevationBounds
   }
 }
