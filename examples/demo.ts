@@ -1,3 +1,1 @@
-import { greet } from '@/main'
-
-greet()
+console.log('hello')

@@ -5,7 +5,7 @@ import rollupPluginTypescript from '@rollup/plugin-typescript'
 
 const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
   lib: {
-    entry: resolveRelativePath('src/main.ts'),
+    entry: resolveRelativePath('src/index.ts'),
     name: 'webgl-streamline-visualiser',
     fileName: 'webgl-streamline-visualiser'
   },
