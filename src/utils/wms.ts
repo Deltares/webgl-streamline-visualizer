@@ -103,6 +103,14 @@ export async function fetchWMSAvailableTimesAndElevations(
   }
 }
 
+export interface FewsGeoTiffMetadata {
+  BitsPerSample?: number[]
+  ImageWidth?: number
+  ImageLength?: number
+  ModelTiepoint?: [number, number]
+  ModelPixelScale?: [number, number]
+}
+
 export async function fetchWMSVelocityField(
   baseUrl: string,
   layer: string,
@@ -144,12 +152,36 @@ export async function fetchWMSVelocityField(
 
   const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer, signal)
   const image = await tiff.getImage()
-  const fileDirectory = image.getFileDirectory()
+  const fileDirectory = image.getFileDirectory() as FewsGeoTiffMetadata
+
+  const expectedProperties: (keyof FewsGeoTiffMetadata)[] = [
+    'BitsPerSample',
+    'ImageWidth',
+    'ImageLength',
+    'ModelTiepoint',
+    'ModelPixelScale'
+  ]
+  const hasExpectedMetadata = expectedProperties.every(
+    property => property in fileDirectory
+  )
+  if (!hasExpectedMetadata) {
+    const propertiesString = expectedProperties
+      .map(property => `"${property}"`)
+      .join(', ')
+    throw new Error(
+      `GeoTIFF metadata does not contain all expected properties; need the following properties: ${propertiesString}`
+    )
+  }
 
   // Assume we have 8-bit data per channel.
-  console.assert(
-    fileDirectory.BitsPerSample.every((numBits: number) => numBits === 8)
+  const isAllChannels8Bit = fileDirectory.BitsPerSample!.every(
+    (numBits: number) => numBits === 8
   )
+  if (!isAllChannels8Bit) {
+    throw new Error(
+      'Fetched GeoTIFF does not have the expected 8 bits bitdepth per channel.'
+    )
+  }
 
   // Get image data, it should always have unsigned 8-bit integers for each
   // channel. For some mysterious reason, the GeoTIFF types say that this
@@ -160,12 +192,12 @@ export async function fetchWMSVelocityField(
   // Get offsets and scales for the image. We multiply the scales by 255, since
   // 255 of an unsigned 8-bit integer corresponds to a texture value of 1.0 in
   // WebGL.
-  const receivedWidth = fileDirectory.ImageWidth
-  const receivedHeight = fileDirectory.ImageLength
-  const uOffset = fileDirectory.ModelTiepoint[0]
-  const vOffset = fileDirectory.ModelTiepoint[1]
-  const uScale = fileDirectory.ModelPixelScale[0] * 255
-  const vScale = fileDirectory.ModelPixelScale[1] * 255
+  const receivedWidth = fileDirectory.ImageWidth!
+  const receivedHeight = fileDirectory.ImageLength!
+  const uOffset = fileDirectory.ModelTiepoint![0]
+  const vOffset = fileDirectory.ModelTiepoint![1]
+  const uScale = fileDirectory.ModelPixelScale![0] * 255
+  const vScale = fileDirectory.ModelPixelScale![1] * 255
 
   return new VelocityImage(
     data,
