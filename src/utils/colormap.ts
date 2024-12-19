@@ -53,12 +53,18 @@ export class Colormap {
 
   /** Start value of the colormap. */
   get start(): number {
-    return this.values[0]
+    if (this.values.length === 0) {
+      throw new Error('Colormap contains no values.')
+    }
+    return this.values[0]!
   }
 
   /** End value of the colormap. */
   get end(): number {
-    return this.values[this.values.length - 1]
+    if (this.values.length === 0) {
+      throw new Error('Colormap contains no values.')
+    }
+    return this.values[this.values.length - 1]!
   }
 
   /** Range of the colormap (i.e. difference between start and end). */
@@ -88,6 +94,10 @@ export class Colormap {
   }
 
   private to1DRGBTextureData(numPoints: number): Uint8Array {
+    if (this.colors.length === 0 || this.values.length === 0) {
+      return new Uint8Array()
+    }
+
     // Uniform step size between start and end for the texture data.
     const step = this.range / (numPoints - 1)
 
@@ -95,26 +105,26 @@ export class Colormap {
     for (let i = 0; i < numPoints; i++) {
       let color: Color
       if (i == 0) {
-        color = this.colors[0]
+        color = this.colors[0]!
       } else if (i == numPoints - 1) {
-        color = this.colors[this.num - 1]
+        color = this.colors[this.num - 1]!
       } else {
         const value = this.start + i * step
         const indexNext = this.values.findIndex(entry => entry > value)
         const indexPrev = indexNext - 1
 
-        const distPrev = Math.abs(value - this.values[indexPrev])
-        const distNext = Math.abs(value - this.values[indexNext])
+        const distPrev = Math.abs(value - this.values[indexPrev]!)
+        const distNext = Math.abs(value - this.values[indexNext]!)
         // Linearly interpolate the colours for this point.
         const weightPrev = distNext / (distPrev + distNext)
         const weightNext = distPrev / (distPrev + distNext)
+
+        const colorPrev = this.colors[indexPrev]!
+        const colorNext = this.colors[indexNext]!
         color = new Color(
-          this.colors[indexPrev].r * weightPrev +
-            this.colors[indexNext].r * weightNext,
-          this.colors[indexPrev].g * weightPrev +
-            this.colors[indexNext].g * weightNext,
-          this.colors[indexPrev].b * weightPrev +
-            this.colors[indexNext].b * weightNext
+          colorPrev.r * weightPrev + colorNext.r * weightNext,
+          colorPrev.g * weightPrev + colorNext.g * weightNext,
+          colorPrev.b * weightPrev + colorNext.b * weightNext
         )
       }
 

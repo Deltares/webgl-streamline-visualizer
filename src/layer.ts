@@ -1,16 +1,16 @@
-import debounce from 'lodash-es/debounce'
+import debounce from 'lodash.debounce'
 import {
-  CustomLayerInterface,
+  type CustomLayerInterface,
   LngLat,
   LngLatBounds,
   Map,
   MercatorCoordinate
 } from 'maplibre-gl'
 import {
-  BoundingBoxScaling,
+  type BoundingBoxScaling,
+  type StreamlineVisualiserOptions,
   StreamlineStyle,
   StreamlineVisualiser,
-  StreamlineVisualiserOptions,
   fetchWMSAvailableTimesAndElevations,
   fetchWMSColormap,
   fetchWMSVelocityField
@@ -35,7 +35,7 @@ function mapBoundsToEpsg3857BoundingBox(
   bounds: LngLatBounds
 ): [number, number, number, number] {
   // Converts weird normalised EPSG:3857 to actual EPSG:3857.
-  const toMercator = (coords: LngLat) => {
+  const toMercator = (coords: LngLat): [number, number] => {
     // TODO: get magic number from Maplibre somehow; mercator
     const mercatorWidth = 2 * 20037508.34
     const mercNorm = MercatorCoordinate.fromLngLat(coords)
@@ -85,7 +85,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   private onResizeStart = () => this.visualiser?.stop()
   // Map moveend events are fired during resize animations, so we debounce the
   // callback to prevent too many velocity field updates from happening.
-  private onMapMoveEnd = debounce(() => this.updateVelocityField(true), 100)
+  private debouncedOnMapMoveEnd = debounce(() => this.onMapMoveEnd(), 100)
 
   constructor(id: string, options: WMSStreamlineLayerOptions) {
     this._id = id
@@ -126,7 +126,13 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     if (this.times.length === 0) {
       throw new Error('No available times.')
     }
-    return this.times[this.timeIndex]
+    const time = this.times[this.timeIndex]
+    if (!time) {
+      throw new Error(
+        `Requested time index ${this.timeIndex} out of range; only ${this.times.length} times available.`
+      )
+    }
+    return time
   }
 
   private get size(): [number, number] {
@@ -161,7 +167,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.abortController.abort()
     this.map
       ?.off('resize', this.onResizeStart)
-      .off('moveend', this.onMapMoveEnd)
+      .off('moveend', this.debouncedOnMapMoveEnd)
     this.visualiser?.destruct()
     this.visualiser = null
     this.previousFrameTime = null
@@ -227,7 +233,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
   async waitForInitialisation(signal?: AbortSignal): Promise<boolean> {
     return new Promise(resolve => {
-      const checkInitialisation = async () => {
+      const checkInitialisation = () => {
         if (this.isInitialised) return resolve(true)
         // The layer may have been removed; fetches have been aborted so we will
         // never be initialised.
@@ -280,7 +286,9 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     // the map is resized. Make sure we do not add the listener if we have
     // already aborted any requests because the layer is being removed.
     if (this.signal.aborted) return
-    this.map.on('resize', this.onResizeStart).on('moveend', this.onMapMoveEnd)
+    this.map
+      .on('resize', this.onResizeStart)
+      .on('moveend', this.debouncedOnMapMoveEnd)
 
     this.isInitialised = true
 
@@ -392,6 +400,13 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     )
   }
 
+  private onMapMoveEnd(): void {
+    const doResetParticles = true
+    this.updateVelocityField(doResetParticles).catch(() =>
+      console.error('Failed to update velocity field.')
+    )
+  }
+
   private async updateVelocityField(doResetParticles: boolean): Promise<void> {
     if (!this.map) throw new Error('Not added to a map')
 
@@ -436,8 +451,9 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       // No error message is necessary if the promise gets rejected due to an
       // abort.
       if (!this.signal.aborted) {
+        const errorString = (error as Error).toString()
         console.error(
-          `Failed to fetch WMS velocity field, or received empty image: ${error}.`
+          `Failed to fetch WMS velocity field, or received empty image: ${errorString}.`
         )
       }
       this.visualiser?.stop()

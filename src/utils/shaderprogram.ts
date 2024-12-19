@@ -84,7 +84,10 @@ export class ShaderProgram {
     }
 
     gl.linkProgram(shaderProgram)
-    const success = gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)
+    const success = gl.getProgramParameter(
+      shaderProgram,
+      gl.LINK_STATUS
+    ) as boolean
     if (!success) {
       const log = gl.getProgramInfoLog(shaderProgram)
       throw new Error(log ?? 'Unknown shader linking error')
@@ -96,7 +99,7 @@ export class ShaderProgram {
     const numAttributes = gl.getProgramParameter(
       shaderProgram,
       gl.ACTIVE_ATTRIBUTES
-    )
+    ) as number
     for (let i = 0; i < numAttributes; i++) {
       const attribute = gl.getActiveAttrib(shaderProgram, i)
       if (attribute === null) continue
@@ -111,7 +114,7 @@ export class ShaderProgram {
     const numUniforms = gl.getProgramParameter(
       shaderProgram,
       gl.ACTIVE_UNIFORMS
-    )
+    ) as number
     for (let i = 0; i < numUniforms; i++) {
       const uniform = gl.getActiveUniform(shaderProgram, i)
       if (uniform === null) continue
@@ -146,7 +149,7 @@ function compileShader(
   gl.shaderSource(shader, source)
   gl.compileShader(shader)
 
-  const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS)
+  const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS) as boolean
   if (success) {
     return shader
   } else {

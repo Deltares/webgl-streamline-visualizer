@@ -20,7 +20,7 @@ import {
 } from './render'
 import { VelocityImage } from './utils/wms'
 import { Colormap } from './utils/colormap'
-import { BoundingBoxScaling } from './render/final'
+import type { BoundingBoxScaling } from './render/final'
 
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
