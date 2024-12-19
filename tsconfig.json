@@ -31,5 +31,5 @@
     "noUnusedParameters": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "tests", "vite.config.ts"]
+  "include": ["examples", "src", "tests", "vite.config.ts"]
 }
