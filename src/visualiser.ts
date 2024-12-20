@@ -40,9 +40,9 @@ export class StreamlineVisualiser {
   private width: number
   private height: number
   private isRendering: boolean
-  private numParticles: number
+  private _numParticles: number
   private particleTextureSize: number
-  private options: StreamlineVisualiserOptions
+  private _options: StreamlineVisualiserOptions
   private textureRenderer: TextureRenderer | null
   private particlePropagator: ParticlePropagator | null
   private particleRenderer: ParticleRenderer | null
@@ -66,9 +66,9 @@ export class StreamlineVisualiser {
     this.width = width
     this.height = height
     this.isRendering = false
-    this.numParticles = numParticles
+    this._numParticles = numParticles
     this.particleTextureSize = particleTextureSize
-    this.options = { ...options }
+    this._options = { ...options }
     this.textureRenderer = null
     this.particlePropagator = null
     this.particleRenderer = null
@@ -86,7 +86,7 @@ export class StreamlineVisualiser {
   // number of particles, we need to store them in a 2D texture, instead of
   // a simple 1D texture.
   private get widthParticlePositionTexture(): number {
-    return Math.ceil(Math.sqrt(this.numParticles))
+    return Math.ceil(Math.sqrt(this._numParticles))
   }
   private get heightParticlePositionTexture(): number {
     return this.widthParticlePositionTexture
@@ -106,7 +106,17 @@ export class StreamlineVisualiser {
     )
   }
 
+  get options(): StreamlineVisualiserOptions {
+    return { ...this._options }
+  }
+
+  get numParticles(): number {
+    return this._numParticles
+  }
+
   initialise(colormap: Colormap): void {
+    this.colorMap = colormap
+
     // Create shader programs for streamline rendering.
     const programUpdateParticles = ShaderProgram.fromShaderSources(
       this.gl,
@@ -136,7 +146,7 @@ export class StreamlineVisualiser {
     // Compute speed curve based on the colormap and options.
     const speedCurve = StreamlineVisualiser.computeSpeedCurve(
       colormap,
-      this.options
+      this._options
     )
 
     // Create and the renderers for the different stages of the visualisation.
@@ -145,24 +155,24 @@ export class StreamlineVisualiser {
       programUpdateParticles,
       this.width,
       this.height,
-      this.numParticles,
+      this._numParticles,
       this.numParticlesAllocate,
-      this.options.numEliminatePerSecond,
+      this._options.numEliminatePerSecond,
       speedCurve
     )
     this.particleRenderer = new ParticleRenderer(
       programRenderParticles,
       this.width,
       this.height,
-      this.numParticles,
-      this.options.particleSize,
+      this._numParticles,
+      this._options.particleSize,
       particleTexture,
       this.widthParticlePositionTexture,
       this.heightParticlePositionTexture
     )
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
-      this.options.style,
+      this._options.style,
       colormap
     )
 
@@ -226,18 +236,18 @@ export class StreamlineVisualiser {
         'Cannot set number of particles for uninitialised visualiser.'
       )
     }
-    if (this.numParticles === numParticles) return
+    if (this._numParticles === numParticles) return
 
     this.resetParticleTexture()
 
-    this.numParticles = numParticles
+    this._numParticles = numParticles
 
     this.particlePropagator?.setNumParticles(
-      this.numParticles,
+      this._numParticles,
       this.numParticlesAllocate
     )
     this.particleRenderer?.setNumParticles(
-      this.numParticles,
+      this._numParticles,
       this.widthParticlePositionTexture,
       this.heightParticlePositionTexture
     )
@@ -251,7 +261,10 @@ export class StreamlineVisualiser {
     this.finalRenderer.setColorMap(this.colorMap)
 
     // Update the speed curve from the new colormap.
-    const curve = StreamlineVisualiser.computeSpeedCurve(colorMap, this.options)
+    const curve = StreamlineVisualiser.computeSpeedCurve(
+      colorMap,
+      this._options
+    )
     this.particlePropagator.setSpeedCurve(curve)
   }
 
@@ -272,7 +285,7 @@ export class StreamlineVisualiser {
     ) {
       throw new Error('Cannot update options for an uninitialised visualiser.')
     }
-    this.options = { ...this.options, ...options }
+    this._options = { ...this._options, ...options }
 
     if (this.velocityImage) {
       // Use the old minimum time step to compute the new one based on the change
@@ -281,17 +294,17 @@ export class StreamlineVisualiser {
     }
 
     this.particlePropagator.numEliminatePerSecond =
-      this.options.numEliminatePerSecond
+      this._options.numEliminatePerSecond
 
     const curve = StreamlineVisualiser.computeSpeedCurve(
       this.colorMap,
-      this.options
+      this._options
     )
     this.particlePropagator.setSpeedCurve(curve)
 
-    this.particleRenderer.particleSize = this.options.particleSize
+    this.particleRenderer.particleSize = this._options.particleSize
 
-    this.finalRenderer.style = this.options.style
+    this.finalRenderer.style = this._options.style
   }
 
   renderFrame(dt: number) {
@@ -321,7 +334,7 @@ export class StreamlineVisualiser {
       // Render the previous particle frame (i.e. a frame with only the
       // particles, not velocity magnitude colours) to a texture, fading it by
       // an amount proportional to the current time step.
-      let fadeAmount = this.options.fadeAmountPerSecond * dtSub
+      let fadeAmount = this._options.fadeAmountPerSecond * dtSub
       // We render the alpha channel with 8-bit precision, so we cannot
       // represent amounts below 1/255. If our fade amount is below this number,
       // randomly fade the texture by 1/255, with a probability proportional to
@@ -367,14 +380,14 @@ export class StreamlineVisualiser {
     // Convert maximum displacement from pixels to clip coordinates in x- and
     // y-direction. Note that clip coordinates run from -1 to 1, hence the
     // factor 2.
-    const maxDisplacementX = (this.options.maxDisplacement / this.width) * 2
-    const maxDisplacementY = (this.options.maxDisplacement / this.height) * 2
+    const maxDisplacementX = (this._options.maxDisplacement / this.width) * 2
+    const maxDisplacementY = (this._options.maxDisplacement / this.height) * 2
 
     // Convert the maximum velocity from physical units to clip coordinates,
     // similar to how it is done in the particle propagator shader.
     let [maxU, maxV] = this.velocityImage.maxVelocity()
-    maxU *= (this.height / this.width) * this.options.speedFactor
-    maxV *= this.options.speedFactor
+    maxU *= (this.height / this.width) * this._options.speedFactor
+    maxV *= this._options.speedFactor
 
     // Compute time step such that the maximum velocity results in the maximum
     // acceptable displacement.
@@ -397,7 +410,7 @@ export class StreamlineVisualiser {
     const y = radius
     const gradient = context.createRadialGradient(x, y, 0, x, y, radius)
 
-    const particleColor = this.options.particleColor ?? 'black'
+    const particleColor = this._options.particleColor ?? 'black'
     gradient.addColorStop(0, particleColor)
     gradient.addColorStop(0.8, particleColor)
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
