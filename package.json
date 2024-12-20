@@ -10,7 +10,7 @@
   "module": "./dist/webgl-streamline-visualiser.js",
   "exports": {
     ".": {
-      "types": "./dist/main.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/webgl-streamline-visualiser.js",
       "require": "./dist/webgl-streamline-visualiser.umd.cjs"
     }
