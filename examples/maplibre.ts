@@ -7,10 +7,12 @@ import type { WMSStreamlineLayerOptions } from '@/layer'
 import { StreamlineStyle, WMSStreamlineLayer } from '@/index'
 
 import { VisualiserOptionsControl } from './options'
+import './wms.ts'
+import type { FewsWmsOptionsControl } from './wms.ts'
 
 async function createMap(): Promise<Map> {
-  const defaultCentre: [number, number] = [5, 52]
-  const defaultZoom = 5.5
+  const defaultCentre: [number, number] = [0, 0]
+  const defaultZoom = 0.2
   const style = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
   const map = new Map({
     container: 'container',
@@ -42,29 +44,22 @@ function createStreamlinesLayer(): WMSStreamlineLayer {
   // Add event listener to initialise the layer once it has been added to the
   // map.
   layer.once('add', () => {
-    initialiseLayer(layer).catch(error =>
-      console.error(
-        `Failed to initialise streamlines layer: ${(error as Error).toString()}.`
-      )
-    )
+    if (!layer.visualiser) {
+      throw new Error('Streamline visualiser was not initialised.')
+    }
+
+    const layerControl = document.getElementById(
+      'wms-control'
+    ) as FewsWmsOptionsControl
+    layerControl.attachLayer(layer)
+
+    // Initialise visualiser options control.
+    const optionsControl = document.getElementById(
+      'options-control'
+    ) as VisualiserOptionsControl
+    optionsControl.attachVisualiser(layer.visualiser)
   })
   return layer
-}
-
-async function initialiseLayer(layer: WMSStreamlineLayer): Promise<void> {
-  const time = new Date('2024-12-20T12:00:00Z')
-  const elevation = -0.5
-  await layer.initialise(time, elevation)
-
-  if (!layer.visualiser) {
-    throw new Error('Streamline visualiser was not initialised.')
-  }
-
-  // Initialise visualiser options control.
-  const control = document.getElementById(
-    'options-control'
-  ) as VisualiserOptionsControl
-  control.attachVisualiser(layer.visualiser)
 }
 
 function initialise(): void {

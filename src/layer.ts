@@ -255,7 +255,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   }
 
   async initialise(
-    time: Date,
+    time?: Date,
     elevation?: number,
     colorScaleRange?: [number, number]
   ): Promise<void> {
@@ -279,7 +279,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.times = response.times
     this.elevationBounds = response.elevationBounds
 
-    this.timeIndex = this.findTimeIndex(time)
+    this.timeIndex = time ? this.findTimeIndex(time) : 0
     this.elevation = elevation ?? null
     this.colorScaleRange = colorScaleRange ?? null
 
@@ -298,6 +298,17 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
     // Request a repaint to ensure we see the velocity field.
     this.map.triggerRepaint()
+  }
+
+  async setWmsLayer(baseUrl: string, layer: string): Promise<void> {
+    this.options.baseUrl = baseUrl
+    this.options.layer = layer
+    await this.initialise()
+  }
+
+  async setStyle(style: string): Promise<void> {
+    this.options.style = style
+    await this.updateVelocityField(false)
   }
 
   async setTime(time: Date): Promise<void> {
