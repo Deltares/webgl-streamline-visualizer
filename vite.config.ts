@@ -1,7 +1,8 @@
 import { resolve } from 'path'
-import type { BuildOptions } from 'vite'
-import { defineConfig } from 'vitest/config'
+import { defineConfig, type BuildOptions } from 'vite'
+
 import rollupPluginTypescript from '@rollup/plugin-typescript'
+import viteGlslPlugin from 'vite-plugin-glsl'
 
 const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
   lib: {
@@ -36,6 +37,12 @@ const DEVELOPMENT_BUILD_OPTIONS: BuildOptions = {
 }
 
 export default defineConfig(({ mode }) => ({
+  plugins: [
+    viteGlslPlugin({
+      include: ['**/*.frag.glsl', '**/*.vert.glsl'],
+      compress: true
+    })
+  ],
   build:
     mode === 'production'
       ? PRODUCTION_BUILD_OPTIONS
@@ -43,15 +50,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': resolveRelativePath('./src')
-    }
-  },
-  test: {
-    browser: {
-      enabled: true,
-      provider: 'playwright',
-      name: 'chromium',
-      headless: true,
-      api: 5174
     }
   }
 }))

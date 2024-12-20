@@ -29,7 +29,9 @@
     "noUncheckedSideEffectImports": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+
+    "types": ["vite-plugin-glsl/ext"]
   },
-  "include": ["examples", "src", "tests", "vite.config.ts"]
+  "include": ["examples", "src", "tests", "vite.config.ts", "vitest.config.ts"]
 }
