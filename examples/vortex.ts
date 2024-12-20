@@ -8,6 +8,9 @@ import {
   type StreamlineVisualiserOptions
 } from '@/visualiser'
 
+import './options'
+import type { VisualiserOptionsControl } from './options'
+
 function createColormap(): Colormap {
   const values = [0, 0.25, 0.5, 0.75, 1]
   const colors = [
@@ -68,7 +71,7 @@ function createVelocityImage(width: number, height: number): VelocityImage {
   )
 }
 
-function initialise(): void {
+function initialiseVisualiser(): StreamlineVisualiser | null {
   // Get the canvas and make sure its contents are rendered at the same
   // resolution as its size.
   const canvas = document.getElementById('canvas') as HTMLCanvasElement
@@ -81,7 +84,7 @@ function initialise(): void {
   const gl = canvas.getContext('webgl2')
   if (!gl) {
     console.error('Could not create WebGL2 rendering context.')
-    return
+    return null
   }
 
   // Create visualiser.
@@ -127,6 +130,17 @@ function initialise(): void {
     window.requestAnimationFrame(renderFrame)
   }
   renderFrame()
+
+  return visualiser
 }
 
-initialise()
+function initialiseControl(visualiser: StreamlineVisualiser): void {
+  const control = document.getElementById(
+    'options-control'
+  ) as VisualiserOptionsControl
+
+  control.attachVisualiser(visualiser)
+}
+
+const visualiser = initialiseVisualiser()
+if (visualiser) initialiseControl(visualiser)
