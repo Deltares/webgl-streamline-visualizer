@@ -13,6 +13,9 @@ const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
     fileName: 'webgl-streamline-visualiser'
   },
   rollupOptions: {
+    // Do not bundle MapLibre; applications using this streamlines library as a
+    // map layer should already have it anyway.
+    external: ['maplibre-gl'],
     plugins: [
       rollupPluginTypescript({
         allowImportingTsExtensions: false,
