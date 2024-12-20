@@ -6,13 +6,11 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/webgl-streamline-visualiser.umd.cjs",
   "module": "./dist/webgl-streamline-visualiser.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/webgl-streamline-visualiser.js",
-      "require": "./dist/webgl-streamline-visualiser.umd.cjs"
+      "import": "./dist/webgl-streamline-visualiser.js"
     }
   },
   "scripts": {

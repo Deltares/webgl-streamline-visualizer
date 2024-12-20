@@ -6,6 +6,9 @@ import rollupPluginTypescript from '@rollup/plugin-typescript'
 const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
   lib: {
     entry: resolveRelativePath('src/index.ts'),
+    // Only build ES module, this library is only relevant for use in the
+    // browser.
+    formats: ['es'],
     name: 'webgl-streamline-visualiser',
     fileName: 'webgl-streamline-visualiser'
   },
