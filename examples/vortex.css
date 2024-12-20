@@ -1,0 +1,9 @@
+main {
+  width: 800px;
+  margin: auto;
+}
+
+canvas {
+  width: 800px;
+  height: 600px;
+}

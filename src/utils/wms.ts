@@ -6,7 +6,7 @@ import { createTexture } from './textures'
 
 export class VelocityImage {
   constructor(
-    private data: Uint8Array,
+    private data: Uint8Array | Uint8ClampedArray,
     readonly width: number,
     readonly height: number,
     readonly uOffset: number,

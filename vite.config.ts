@@ -31,7 +31,7 @@ const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
 const DEVELOPMENT_BUILD_OPTIONS: BuildOptions = {
   rollupOptions: {
     input: {
-      demo: resolveRelativePath('examples/demo.html')
+      vortex: resolveRelativePath('examples/vortex.html')
     }
   }
 }
