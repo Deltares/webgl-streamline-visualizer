@@ -62,7 +62,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   private gl: WebGL2RenderingContext | null
 
   private options: WMSStreamlineLayerOptions
-  private visualiser: StreamlineVisualiser | null
+  private _visualiser: StreamlineVisualiser | null
   private previousFrameTime: DOMHighResTimeStamp | null
 
   private boundingBoxWMS: [number, number, number, number] | null
@@ -82,7 +82,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   private onEndLoading: (() => void) | null
   // Pause rendering during map resizes; rendering will be continued by the
   // newly fetched velocity field.
-  private onResizeStart = () => this.visualiser?.stop()
+  private onResizeStart = () => this._visualiser?.stop()
   // Map moveend events are fired during resize animations, so we debounce the
   // callback to prevent too many velocity field updates from happening.
   private debouncedOnMapMoveEnd = debounce(() => this.onMapMoveEnd(), 100)
@@ -94,7 +94,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.gl = null
 
     this.options = options
-    this.visualiser = null
+    this._visualiser = null
     this.previousFrameTime = null
 
     this.boundingBoxWMS = null
@@ -116,6 +116,10 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
   get id(): string {
     return this._id
+  }
+
+  get visualiser(): StreamlineVisualiser | null {
+    return this._visualiser
   }
 
   private get signal(): AbortSignal {
@@ -146,7 +150,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.map = map
     this.gl = gl
 
-    this.visualiser = this.createVisualiser(gl, this.options)
+    this._visualiser = this.createVisualiser(gl, this.options)
 
     this.times = []
     this.elevationBounds = null
@@ -168,13 +172,13 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.map
       ?.off('resize', this.onResizeStart)
       .off('moveend', this.debouncedOnMapMoveEnd)
-    this.visualiser?.destruct()
-    this.visualiser = null
+    this._visualiser?.destruct()
+    this._visualiser = null
     this.previousFrameTime = null
   }
 
   render(): void {
-    if (!this.map || !this.boundingBoxWMS || !this.visualiser) {
+    if (!this.map || !this.boundingBoxWMS || !this._visualiser) {
       return
     }
 
@@ -203,7 +207,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       offsetX: (-2 * (xCentreCur - xCentreWMS)) / widthCur,
       offsetY: (-2 * (yCentreCur - yCentreWMS)) / heightCur
     }
-    this.visualiser?.setScaling(scaling)
+    this._visualiser?.setScaling(scaling)
 
     // Determine time elapsed between this frame and the previous frame.
     const now = performance.now()
@@ -213,7 +217,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.previousFrameTime = now
 
     // Render the streamline visualisation.
-    this.visualiser?.renderFrame(dt)
+    this._visualiser?.renderFrame(dt)
 
     // Request a new frame from Maplibre, apparently (surprising API...).
     this.map.triggerRepaint()
@@ -255,7 +259,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     elevation?: number,
     colorScaleRange?: [number, number]
   ): Promise<void> {
-    if (!this.visualiser || !this.map) throw new Error('Not added to a map.')
+    if (!this._visualiser || !this.map) throw new Error('Not added to a map.')
 
     // Fetch colormap and use it to initialise the visualiser.
     const colormap = await fetchWMSColormap(
@@ -264,7 +268,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       colorScaleRange,
       this.signal
     )
-    this.visualiser.initialise(colormap)
+    this._visualiser.initialise(colormap)
 
     // Fetch available WMS times and elevations.
     const response = await fetchWMSAvailableTimesAndElevations(
@@ -355,21 +359,21 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       colorScaleRange ?? undefined,
       this.signal
     )
-    this.visualiser?.setColorMap(colormap)
+    this._visualiser?.setColorMap(colormap)
 
     // Note that we do not need a velocity update, since the TIFF response from
     // the WMS server does not depend on the color scale range.
   }
 
   setNumParticles(numParticles: number): void {
-    this.visualiser?.setNumParticles(numParticles)
-    this.visualiser?.updateOptions({
+    this._visualiser?.setNumParticles(numParticles)
+    this._visualiser?.updateOptions({
       numEliminatePerSecond: numParticles
     })
   }
 
   setVisualiserOptions(options: Partial<StreamlineVisualiserOptions>): void {
-    this.visualiser?.updateOptions(options)
+    this._visualiser?.updateOptions(options)
   }
 
   async setDisplayUnits(useDisplayUnits: boolean | undefined): Promise<void> {
@@ -415,10 +419,10 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     // Update the canvas size and dimensions for the visualiser. This is no-op
     // if the size has not changed.
     const [width, height] = this.size
-    this.visualiser?.setDimensions(width, height)
+    this._visualiser?.setDimensions(width, height)
     // Restart animation after setting the dimensions, so we can still show
     // some animation after resizing the canvas, with the old velocity field.
-    this.visualiser?.start()
+    this._visualiser?.start()
 
     // Make sure to get the bounds before we start the long wait for the WMS
     // layer, since the user may have moved the map while this fetch is
@@ -446,7 +450,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
         this.elevation ?? undefined,
         this.signal
       )
-      this.visualiser?.setVelocityImage(velocityImage, doResetParticles)
+      this._visualiser?.setVelocityImage(velocityImage, doResetParticles)
     } catch (error) {
       // No error message is necessary if the promise gets rejected due to an
       // abort.
@@ -456,12 +460,12 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
           `Failed to fetch WMS velocity field, or received empty image: ${errorString}.`
         )
       }
-      this.visualiser?.stop()
+      this._visualiser?.stop()
       this.boundingBoxWMS = null
       return
     }
 
-    this.visualiser?.start()
+    this._visualiser?.start()
     this.boundingBoxWMS = boundingBox
 
     // Request a repaint from Maplibre so we (re)start the animation.
