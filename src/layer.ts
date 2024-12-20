@@ -1,9 +1,9 @@
 import debounce from 'lodash.debounce'
 import {
   type CustomLayerInterface,
-  LngLat,
-  LngLatBounds,
-  Map,
+  type LngLat,
+  type LngLatBounds,
+  type Map,
   MercatorCoordinate
 } from 'maplibre-gl'
 import {
