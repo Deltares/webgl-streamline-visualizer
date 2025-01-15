@@ -3,7 +3,7 @@
   "description": "Particle-based flow field visualiser based on WebGL",
   "license": "MIT",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "files": [
     "dist"
