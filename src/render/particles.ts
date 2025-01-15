@@ -181,16 +181,8 @@ export class ParticleRenderer {
       this.width / this.height
     )
 
-    // Properties of the data texture used to get the particle positions in the
+    // Width of the data texture to retrieve the particle positions in the
     // vertex shader.
-    gl.uniform1f(
-      this.program.getUniformLocation('u_step_x'),
-      1.0 / this.widthParticlePositionTexture
-    )
-    gl.uniform1f(
-      this.program.getUniformLocation('u_step_y'),
-      1.0 / this.heightParticlePositionTexture
-    )
     gl.uniform1i(
       this.program.getUniformLocation('u_width'),
       this.widthParticlePositionTexture
