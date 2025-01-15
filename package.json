@@ -1,6 +1,7 @@
 {
   "name": "@deltares/webgl-streamline-visualizer",
   "description": "Particle-based flow field visualiser based on WebGL",
+  "license": "MIT",
   "private": false,
   "version": "1.0.0",
   "type": "module",
