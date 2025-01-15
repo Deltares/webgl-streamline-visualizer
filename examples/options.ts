@@ -7,6 +7,10 @@ import type {
 export class VisualiserOptionsControl extends HTMLElement {
   private container: HTMLDivElement
   private visualiser: StreamlineVisualiser | null = null
+  private onNumParticleChangeCallbacks: ((numParticles: number) => void)[] = []
+  private onOptionsChangeCallbacks: ((
+    options: Partial<StreamlineVisualiserOptions>
+  ) => void)[] = []
 
   constructor() {
     super()
@@ -25,6 +29,23 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.visualiser = visualiser
 
     this.initialiseControls()
+  }
+
+  setOptions(
+    numParticles?: number,
+    options?: Partial<StreamlineVisualiserOptions>
+  ): void {
+    if (!this.visualiser) return
+    if (numParticles) {
+      this.visualiser.setNumParticles(numParticles)
+      this.onNumParticleChangeCallbacks.forEach(callback =>
+        callback(numParticles)
+      )
+    }
+    if (options) {
+      this.visualiser.updateOptions(options)
+      this.onOptionsChangeCallbacks.forEach(callback => callback(options))
+    }
   }
 
   private initialiseControls() {
@@ -103,6 +124,12 @@ export class VisualiserOptionsControl extends HTMLElement {
       this.visualiser.updateOptions({ style })
     })
 
+    this.onOptionsChangeCallbacks.push(options => {
+      if (options.style) {
+        select.value = options.style.toString()
+      }
+    })
+
     return select
   }
 
@@ -116,12 +143,18 @@ export class VisualiserOptionsControl extends HTMLElement {
       // particles; this works well in almost all cases.
       this.visualiser.updateOptions({ numEliminatePerSecond: numParticles })
     }
-    return this.createNumericInput(
+    const [labelElement, inputElement] = this.createNumericInput(
       'Number of particles',
       this.visualiser.numParticles,
       1000,
       setNumParticles
     )
+
+    this.onNumParticleChangeCallbacks.push(numParticles => {
+      inputElement.value = numParticles.toString()
+    })
+
+    return labelElement
   }
 
   private createNumericOptionsControl(
@@ -136,12 +169,20 @@ export class VisualiserOptionsControl extends HTMLElement {
       if (!this.visualiser) return
       this.visualiser.updateOptions({ [key]: value })
     }
-    return this.createNumericInput(
+    const [labelElement, inputElement] = this.createNumericInput(
       label,
       this.visualiser.options[key] ?? defaultValue,
       step,
       setOption
     )
+
+    this.onOptionsChangeCallbacks.push(options => {
+      if (key in options) {
+        inputElement.value = options[key]!.toString()
+      }
+    })
+
+    return labelElement
   }
 
   private createNumericInput(
@@ -149,7 +190,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     initialValue: number,
     step: number,
     callback: (value: number) => void
-  ): HTMLLabelElement {
+  ): [HTMLLabelElement, HTMLInputElement] {
     const el = document.createElement('label')
     el.textContent = label
     el.style.display = 'flex'
@@ -166,7 +207,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     )
 
     el.appendChild(input)
-    return el
+    return [el, input]
   }
 
   private setNumberIfValid(

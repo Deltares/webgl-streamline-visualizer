@@ -1,22 +1,35 @@
 import type { WMSStreamlineLayer } from '@/layer'
-import type { GetCapabilitiesResponse } from '@deltares/fews-wms-requests'
+import { StreamlineStyle } from '@/render'
+import type { StreamlineVisualiserOptions } from '@/visualiser'
+import type {
+  GetCapabilitiesResponse,
+  Layer as FewsWmsLayer
+} from '@deltares/fews-wms-requests'
 
 interface WmsStyle {
   id: string
   title: string
 }
 
+type FewsAnimatedVectorSettings = FewsWmsLayer['animatedVectors']
 interface Layer {
   id: string
   title: string
   times: Date[]
   styles: WmsStyle[]
   elevationBounds: [number, number] | null
+  defaultSettings: FewsAnimatedVectorSettings
 }
+
+type LayerChangeCallback = (
+  numParticles?: number,
+  options?: Partial<StreamlineVisualiserOptions>
+) => void
 
 export class FewsWmsOptionsControl extends HTMLElement {
   private layer: WMSStreamlineLayer | null
   private availableLayers: Layer[]
+  private layerChangeCallback: LayerChangeCallback | null
 
   private container: HTMLDivElement
   private controlContainer: HTMLDivElement
@@ -32,6 +45,7 @@ export class FewsWmsOptionsControl extends HTMLElement {
 
     this.layer = null
     this.availableLayers = []
+    this.layerChangeCallback = null
 
     this.container = document.createElement('div')
     this.container.style.display = 'flex'
@@ -76,6 +90,10 @@ export class FewsWmsOptionsControl extends HTMLElement {
 
   attachLayer(layer: WMSStreamlineLayer): void {
     this.layer = layer
+  }
+
+  onLayerChange(callback: LayerChangeCallback): void {
+    this.layerChangeCallback = callback
   }
 
   private createSelectControl(placeholder: string): HTMLSelectElement {
@@ -168,7 +186,8 @@ export class FewsWmsOptionsControl extends HTMLElement {
         title: layer.title,
         times,
         styles,
-        elevationBounds
+        elevationBounds,
+        defaultSettings: layer.animatedVectors!
       }
     })
   }
@@ -240,6 +259,32 @@ export class FewsWmsOptionsControl extends HTMLElement {
     // Initialise layer.
     this.layer
       .setWmsLayer(this.baseUrlInput.value, this.layerSelect.value)
+      .then(() => {
+        if (this.layerChangeCallback) {
+          const fewsOptions = layer.defaultSettings
+          const options: Partial<StreamlineVisualiserOptions> = {
+            style: fewsOptions?.coloredParticles
+              ? StreamlineStyle.MagnitudeColoredParticles
+              : StreamlineStyle.ColoredParticles,
+            particleSize: fewsOptions?.particleSize,
+            speedFactor: fewsOptions?.speedFactor,
+            fadeAmountPerSecond: fewsOptions?.fadeAmount,
+            speedExponent: fewsOptions?.speedExponent,
+            particleColor: fewsOptions?.particleColor
+              ? `#${fewsOptions?.particleColor}`
+              : undefined
+          }
+          const numParticles = fewsOptions?.numberOfParticles
+
+          try {
+            this.layerChangeCallback(numParticles, options)
+          } catch (error) {
+            console.error(
+              `Layer change callback failed: ${(error as Error).toString()}`
+            )
+          }
+        }
+      })
       .catch(error =>
         console.error(
           `Failed to initialise streamlines layer: ${(error as Error).toString()}`

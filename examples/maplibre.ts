@@ -4,7 +4,11 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { Map } from 'maplibre-gl'
 
 import type { WMSStreamlineLayerOptions } from '@/layer'
-import { StreamlineStyle, WMSStreamlineLayer } from '@/index'
+import {
+  StreamlineStyle,
+  WMSStreamlineLayer,
+  type StreamlineVisualiserOptions
+} from '@/index'
 
 import { VisualiserOptionsControl } from './options'
 import './wms.ts'
@@ -58,6 +62,15 @@ function createStreamlinesLayer(): WMSStreamlineLayer {
       'options-control'
     ) as VisualiserOptionsControl
     optionsControl.attachVisualiser(layer.visualiser)
+
+    layerControl.onLayerChange(
+      (
+        numParticles?: number,
+        options?: Partial<StreamlineVisualiserOptions>
+      ) => {
+        optionsControl.setOptions(numParticles, options)
+      }
+    )
   })
   return layer
 }
