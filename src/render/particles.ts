@@ -1,5 +1,5 @@
 import { createRectangleVertexArray } from '../utils/geometry'
-import { ShaderProgram, bindTexture } from '../utils/shaderprogram'
+import { ShaderProgram, bindTexture } from '../utils/shader-program'
 
 export class ParticleRenderer {
   public particleSize: number

@@ -8,7 +8,7 @@ import renderFragmentShaderSource from './shaders/render.frag.glsl'
 import textureFragmentShaderSource from './shaders/texture.frag.glsl'
 import finalFragmentShaderSource from './shaders/final.frag.glsl'
 
-import { ShaderProgram } from './utils/shaderprogram'
+import { ShaderProgram } from './utils/shader-program'
 import { SpeedCurve } from './utils/speedcurve'
 import { createTexture } from './utils/textures'
 import {
@@ -21,6 +21,7 @@ import {
 import { VelocityImage } from './utils/wms'
 import { Colormap } from './utils/colormap'
 import type { BoundingBoxScaling } from './render/final'
+import { FragmentShader, VertexShader } from './utils/shader'
 
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
@@ -114,31 +115,15 @@ export class StreamlineVisualiser {
     return this._numParticles
   }
 
-  initialise(colormap: Colormap): void {
+  async initialise(colormap: Colormap): Promise<void> {
     this.colorMap = colormap
 
-    // Create shader programs for streamline rendering.
-    const programUpdateParticles = ShaderProgram.fromShaderSources(
-      this.gl,
-      particleVertexShaderSource,
-      placeholderFragmentShaderSource,
-      ['v_position']
-    )
-    const programRenderParticles = ShaderProgram.fromShaderSources(
-      this.gl,
-      renderVertexShaderSource,
-      renderFragmentShaderSource
-    )
-    const programRenderTexture = ShaderProgram.fromShaderSources(
-      this.gl,
-      textureVertexShaderSource,
-      textureFragmentShaderSource
-    )
-    const programRenderFinal = ShaderProgram.fromShaderSources(
-      this.gl,
-      finalVertexShaderSource,
-      finalFragmentShaderSource
-    )
+    const [
+      programUpdateParticles,
+      programRenderParticles,
+      programRenderTexture,
+      programRenderFinal
+    ] = await this.compileShaderPrograms()
 
     // Create a texture to use as the particle sprite.
     const particleTexture = this.createParticleTexture()
@@ -369,6 +354,83 @@ export class StreamlineVisualiser {
 
     // Swap previous and current particle texture.
     this.swapParticleTextures()
+  }
+
+  private async compileShaderPrograms(): Promise<
+    [ShaderProgram, ShaderProgram, ShaderProgram, ShaderProgram]
+  > {
+    // Create vertex shaders.
+    const particleVertexShader = new VertexShader(
+      this.gl,
+      particleVertexShaderSource
+    )
+    const renderVertexShader = new VertexShader(
+      this.gl,
+      renderVertexShaderSource
+    )
+    const textureVertexShader = new VertexShader(
+      this.gl,
+      textureVertexShaderSource
+    )
+    const finalVertexShader = new VertexShader(this.gl, finalVertexShaderSource)
+
+    // Create fragment shaders.
+    const placeholderFragmentShader = new FragmentShader(
+      this.gl,
+      placeholderFragmentShaderSource
+    )
+    const renderFragmentShader = new FragmentShader(
+      this.gl,
+      renderFragmentShaderSource
+    )
+    const textureFragmentShader = new FragmentShader(
+      this.gl,
+      textureFragmentShaderSource
+    )
+    const finalFragmentShader = new FragmentShader(
+      this.gl,
+      finalFragmentShaderSource
+    )
+
+    // Create shader programs.
+    const programUpdateParticles = new ShaderProgram(
+      this.gl,
+      particleVertexShader,
+      placeholderFragmentShader,
+      ['v_position']
+    )
+    const programRenderParticles = new ShaderProgram(
+      this.gl,
+      renderVertexShader,
+      renderFragmentShader
+    )
+    const programRenderTexture = new ShaderProgram(
+      this.gl,
+      textureVertexShader,
+      textureFragmentShader
+    )
+    const programRenderFinal = new ShaderProgram(
+      this.gl,
+      finalVertexShader,
+      finalFragmentShader
+    )
+
+    // Wait until all shader programs have been linked.
+    await Promise.all(
+      [
+        programUpdateParticles,
+        programRenderParticles,
+        programRenderTexture,
+        programRenderFinal
+      ].map(program => program.link())
+    )
+
+    return [
+      programUpdateParticles,
+      programRenderParticles,
+      programRenderTexture,
+      programRenderFinal
+    ]
   }
 
   private computeMinimumTimeStep(): number {
