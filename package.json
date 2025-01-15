@@ -16,29 +16,31 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lint": "eslint \"./src/**/*.ts\" \"./examples/**/*.ts\"",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test-once": "vitest run"
   },
   "devDependencies": {
     "@deltares/fews-wms-requests": "^1.0.3",
-    "@eslint/js": "^9.17.0",
+    "@eslint/js": "^9.18.0",
     "@rollup/plugin-typescript": "^12.1.2",
-    "@types/lodash.debounce": "^4.0.9",
-    "@types/node": "^22.10.2",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^22.10.6",
     "@vitest/browser": "^2.1.8",
     "eslint": "^9.17.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
     "playwright": "^1.49.1",
-    "typescript": "~5.6.3",
-    "typescript-eslint": "^8.18.1",
-    "vite": "^6.0.3",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vite": "^6.0.7",
     "vite-plugin-glsl": "^1.3.1",
     "vitest": "^2.1.8"
   },
   "dependencies": {
     "geotiff": "^2.1.3",
-    "lodash.debounce": "^4.0.8",
+    "lodash-es": "^4.17.21",
     "maplibre-gl": "^4.7.1"
   }
 }
