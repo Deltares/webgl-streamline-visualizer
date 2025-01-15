@@ -27,6 +27,8 @@ type LayerChangeCallback = (
 ) => void
 
 export class FewsWmsOptionsControl extends HTMLElement {
+  static readonly URL_STORAGE_KEY = 'maplibre-demo-base-url'
+
   private layer: WMSStreamlineLayer | null
   private availableLayers: Layer[]
   private layerChangeCallback: LayerChangeCallback | null
@@ -90,6 +92,17 @@ export class FewsWmsOptionsControl extends HTMLElement {
 
   attachLayer(layer: WMSStreamlineLayer): void {
     this.layer = layer
+
+    // If we have a URL in the localStorage, use it.
+    const baseUrl = localStorage.getItem(FewsWmsOptionsControl.URL_STORAGE_KEY)
+    if (baseUrl) {
+      this.baseUrlInput.value = baseUrl
+      this.setBaseUrl(baseUrl).catch(error =>
+        console.error(
+          `Failed to set stored base URL: ${(error as Error).toString()}`
+        )
+      )
+    }
   }
 
   onLayerChange(callback: LayerChangeCallback): void {
@@ -149,6 +162,12 @@ export class FewsWmsOptionsControl extends HTMLElement {
       // We have a working WMS URL, so fetch times, elevation and styles.
       await this.fetchCapabilities(baseUrl)
       this.createWmsLayerOptions()
+
+      // Store the URL in the localStorage.
+      localStorage.setItem(
+        FewsWmsOptionsControl.URL_STORAGE_KEY,
+        baseUrl.toString()
+      )
     } catch {
       this.disableControls()
       return
