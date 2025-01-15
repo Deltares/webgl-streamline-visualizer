@@ -18,7 +18,8 @@
     "build": "tsc && vite build",
     "lint": "eslint \"./src/**/*.ts\" \"./examples/**/*.ts\"",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test-once": "vitest run"
   },
   "devDependencies": {
     "@deltares/fews-wms-requests": "^1.0.3",
