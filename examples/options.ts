@@ -81,11 +81,11 @@ export class VisualiserOptionsControl extends HTMLElement {
       },
       {
         title: 'Colored particles on velocity magnitude',
-        value: StreamlineStyle.MagnitudeColoredParticles
+        value: StreamlineStyle.ColoredParticles
       },
       {
         title: 'Magnitude colored particles',
-        value: StreamlineStyle.ColoredParticles
+        value: StreamlineStyle.MagnitudeColoredParticles
       }
     ]
     options.forEach(option => {
