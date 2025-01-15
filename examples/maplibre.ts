@@ -30,12 +30,9 @@ async function createMap(): Promise<Map> {
 }
 
 function createStreamlinesLayer(): WMSStreamlineLayer {
-  const baseUrl =
-    'https://rwsos-dataservices-ont.avi.deltares.nl/durban/FewsWebServices/wms'
-  const layerName = 'kzn_z_currents_d3d'
   const options: WMSStreamlineLayerOptions = {
-    baseUrl,
-    layer: layerName,
+    baseUrl: '',
+    layer: '',
     streamlineStyle: StreamlineStyle.LightParticlesOnMagnitude,
     numParticles: 12000,
     particleSize: 4,
