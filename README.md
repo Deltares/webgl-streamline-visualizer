@@ -50,6 +50,11 @@ source:
 npm run dev
 ```
 
+Run the linter on the library and examples:
+```bash
+npm run lint
+```
+
 Run a production build of the library:
 ```bash
 npm run build
