@@ -10,8 +10,8 @@ const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
     // Only build ES module, this library is only relevant for use in the
     // browser.
     formats: ['es'],
-    name: 'webgl-streamline-visualiser',
-    fileName: 'webgl-streamline-visualiser'
+    name: 'webgl-streamline-visualizer',
+    fileName: 'webgl-streamline-visualizer'
   },
   rollupOptions: {
     // Do not bundle MapLibre; applications using this streamlines library as a

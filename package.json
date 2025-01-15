@@ -1,16 +1,16 @@
 {
-  "name": "@deltares/webgl-streamline-visualiser",
-  "private": true,
+  "name": "@deltares/webgl-streamline-visualizer",
+  "private": false,
   "version": "0.0.0",
   "type": "module",
   "files": [
     "dist"
   ],
-  "module": "./dist/webgl-streamline-visualiser.js",
+  "module": "./dist/webgl-streamline-visualizer.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/webgl-streamline-visualiser.js"
+      "import": "./dist/webgl-streamline-visualizer.js"
     }
   },
   "scripts": {
