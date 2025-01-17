@@ -5,7 +5,7 @@ in vec2 a_position;
 in vec2 a_tex_coord;
 
 uniform int u_width;
-uniform sampler2D u_particle_position_texture;
+uniform highp sampler2D u_particle_position_texture;
 
 uniform float u_particle_size;
 uniform float u_aspect_ratio;
