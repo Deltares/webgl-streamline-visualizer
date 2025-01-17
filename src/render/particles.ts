@@ -136,7 +136,7 @@ export class ParticleRenderer {
     gl.texStorage2D(
       gl.TEXTURE_2D,
       1,
-      gl.RG32F,
+      gl.RGBA32F,
       this.widthParticlePositionTexture,
       this.heightParticlePositionTexture
     )
@@ -168,7 +168,7 @@ export class ParticleRenderer {
       0, // y-offset
       this.widthParticlePositionTexture,
       this.heightParticlePositionTexture,
-      gl.RG,
+      gl.RGBA,
       gl.FLOAT,
       0 // offset into the pixel unpack buffer
     )
