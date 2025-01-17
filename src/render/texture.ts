@@ -6,7 +6,8 @@ export class TextureRenderer {
   private positionBuffer: WebGLBuffer | null
   private texCoordBuffer: WebGLBuffer | null
   private vertexArray: WebGLVertexArrayObject | null
-  private frameBuffer: WebGLFramebuffer | null
+  private previousFramebuffer: WebGLFramebuffer
+  private currentFramebuffer: WebGLFramebuffer
 
   constructor(program: ShaderProgram) {
     this.program = program
@@ -14,7 +15,8 @@ export class TextureRenderer {
     this.positionBuffer = null
     this.texCoordBuffer = null
     this.vertexArray = null
-    this.frameBuffer = null
+    this.previousFramebuffer = this.program.gl.createFramebuffer()
+    this.currentFramebuffer = this.program.gl.createFramebuffer()
   }
 
   initialise(): void {
@@ -31,7 +33,6 @@ export class TextureRenderer {
     this.positionBuffer = positionBuffer
     this.texCoordBuffer = texCoordBuffer
     this.vertexArray = vertexArray
-    this.frameBuffer = this.program.gl.createFramebuffer()
   }
 
   destruct(): void {
@@ -39,8 +40,16 @@ export class TextureRenderer {
     gl.deleteBuffer(this.positionBuffer)
     gl.deleteBuffer(this.texCoordBuffer)
     gl.deleteVertexArray(this.vertexArray)
-    gl.deleteFramebuffer(this.frameBuffer)
+    gl.deleteFramebuffer(this.currentFramebuffer)
     this.program.destruct()
+  }
+
+  resetParticleTextures(
+    previousParticleTexture: WebGLTexture,
+    currentParticleTexture: WebGLTexture
+  ): void {
+    this.setupFramebuffer(this.previousFramebuffer, previousParticleTexture)
+    this.setupFramebuffer(this.currentFramebuffer, currentParticleTexture)
   }
 
   render(
@@ -62,36 +71,48 @@ export class TextureRenderer {
     )
 
     if (outputTexture) {
-      this.enableRenderToTexture(outputTexture)
+      this.enableRenderToTexture()
     } else {
       this.disableRenderToTexture()
     }
 
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
     gl.bindVertexArray(null)
   }
 
-  private enableRenderToTexture(outputTexture: WebGLTexture): void {
-    if (this.frameBuffer === null) {
-      throw new Error('Framebuffer has not been initialised.')
-    }
+  swapBuffers(): void {
+    const temp = this.previousFramebuffer
+    this.previousFramebuffer = this.currentFramebuffer
+    this.currentFramebuffer = temp
+  }
+
+  private enableRenderToTexture(): void {
     const gl = this.program.gl
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer)
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      outputTexture,
-      0
-    )
-    gl.clearColor(0.0, 0.0, 0.0, 0.0)
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-    gl.disable(gl.BLEND)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.currentFramebuffer)
   }
 
   private disableRenderToTexture(): void {
     const gl = this.program.gl
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  }
+
+  private setupFramebuffer(
+    framebuffer: WebGLFramebuffer,
+    texture: WebGLTexture
+  ): void {
+    const gl = this.program.gl
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      texture,
+      0
+    )
+    gl.clearColor(0.0, 0.0, 0.0, 0.0)
+    gl.disable(gl.BLEND)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   }
 }
