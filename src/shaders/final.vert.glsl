@@ -1,4 +1,5 @@
 #version 300 es
+precision highp float;
 
 uniform vec2 u_bbox_scale;
 uniform vec2 u_bbox_offset;
