@@ -333,11 +333,7 @@ export class StreamlineVisualiser {
         const fadeProbability = fadeAmount / fadeAmountMin
         fadeAmount = Math.random() < fadeProbability ? fadeAmountMin : 0
       }
-      this.textureRenderer.render(
-        this.previousParticleTexture,
-        fadeAmount,
-        this.currentParticleTexture
-      )
+      this.textureRenderer.render(this.previousParticleTexture, fadeAmount)
 
       // Update the particle positions into an output buffer.
       this.particlePropagator.update(dtSub)

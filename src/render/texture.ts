@@ -52,30 +52,15 @@ export class TextureRenderer {
     this.setupFramebuffer(this.currentFramebuffer, currentParticleTexture)
   }
 
-  render(
-    inputTexture: WebGLTexture,
-    fadeAmount: number,
-    outputTexture: WebGLTexture | null
-  ): void {
+  render(inputTexture: WebGLTexture, fadeAmount: number): void {
     const gl = this.program.gl
     this.program.use()
 
     gl.bindVertexArray(this.vertexArray)
     bindTexture(this.program, 'u_texture', 0, inputTexture)
     gl.uniform1f(this.program.getUniformLocation('u_fade_amount'), fadeAmount)
-    // Flip y-axis if we are rendering to texture, as it is otherwise flipped
-    // compared to rendering to canvas.
-    gl.uniform1f(
-      this.program.getUniformLocation('u_flip'),
-      outputTexture ? -1.0 : 1.0
-    )
 
-    if (outputTexture) {
-      this.enableRenderToTexture()
-    } else {
-      this.disableRenderToTexture()
-    }
-
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.currentFramebuffer)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
@@ -86,16 +71,6 @@ export class TextureRenderer {
     const temp = this.previousFramebuffer
     this.previousFramebuffer = this.currentFramebuffer
     this.currentFramebuffer = temp
-  }
-
-  private enableRenderToTexture(): void {
-    const gl = this.program.gl
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.currentFramebuffer)
-  }
-
-  private disableRenderToTexture(): void {
-    const gl = this.program.gl
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   }
 
   private setupFramebuffer(
