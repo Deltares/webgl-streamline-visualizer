@@ -58,9 +58,8 @@ vec2 get_clip_space_velocity(vec2 pos) {
     // Finally, compute the velocity based on the compressed speed.
     velocity = normalize(velocity) * speed_compressed;
 
-    // Correct the velocity for the aspect ratio of the canvas.
+    // Correct the x-velocity for the aspect ratio of the canvas.
     velocity.x *= u_aspect_ratio;
-    velocity.y *= -1.0;
 
     return velocity;
 }
