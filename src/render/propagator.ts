@@ -59,8 +59,7 @@ export class ParticlePropagator {
   initialise(): void {
     const gl = this.program.gl
 
-    this.inputBuffer = this.initialiseInputBuffer()
-    this.outputBuffer = this.initialiseOutputBuffer()
+    this.resetBuffers()
     this.transformFeedback = gl.createTransformFeedback()
 
     // A bit hacky: start by swapping the input and output buffer, since the
@@ -91,8 +90,7 @@ export class ParticlePropagator {
     this.numParticles = numParticles
     this.numParticlesAllocate = numParticlesAllocate
 
-    this.inputBuffer = this.initialiseInputBuffer()
-    this.outputBuffer = this.initialiseOutputBuffer()
+    this.resetBuffers()
     this.swapBuffers()
   }
 
@@ -147,40 +145,45 @@ export class ParticlePropagator {
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null)
   }
 
-  private initialiseInputBuffer(): WebGLBuffer {
+  private resetBuffers(): void {
     const gl = this.program.gl
-    // Fill input buffer with initial particle coordinates.
-    const inputBuffer = gl.createBuffer()
-    if (inputBuffer === null) {
-      throw new Error('Failed to create particle input buffer.')
-    }
-    const initialCoords = this.createParticles()
-    gl.bindBuffer(gl.ARRAY_BUFFER, inputBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, initialCoords, gl.DYNAMIC_DRAW)
-    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+    if (this.inputBuffer) gl.deleteBuffer(this.inputBuffer)
+    if (this.outputBuffer) gl.deleteBuffer(this.outputBuffer)
 
-    return inputBuffer
+    this.inputBuffer = this.createParticleBuffer()
+    this.outputBuffer = this.createParticleBuffer()
+
+    // Initialise input buffer with random particle positions.
+    this.initialiseInputBuffer()
   }
 
-  private initialiseOutputBuffer(): WebGLBuffer {
+  private createParticleBuffer(): WebGLBuffer {
     const gl = this.program.gl
     // Create empty output buffer with buffer size of:
     //   2 (elements per vec2) * 4 (bytes per float) * numParticlesAllocate
     const numBytesBuffer = 2 * 4 * this.numParticlesAllocate
-    const outputBuffer = gl.createBuffer()
-    if (outputBuffer === null) {
-      throw new Error('Failed to create particle input buffer.')
+    const buffer = gl.createBuffer()
+    if (buffer === null) {
+      throw new Error('Failed to create particle buffer.')
     }
-    gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, outputBuffer)
-    gl.bufferData(gl.TRANSFORM_FEEDBACK_BUFFER, numBytesBuffer, gl.DYNAMIC_DRAW)
-    gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, numBytesBuffer, gl.DYNAMIC_DRAW)
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
 
-    return outputBuffer
+    return buffer
+  }
+
+  private initialiseInputBuffer(): void {
+    const gl = this.program.gl
+
+    const initialCoords = this.createParticles()
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.inputBuffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, initialCoords)
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
   }
 
   private createParticles(): Float32Array {
-    // Allocate the buffer to fit a square texture, but only fill part of it.
-    const coords = new Float32Array(this.numParticlesAllocate * 2)
+    const coords = new Float32Array(this.numParticles * 2)
     for (let i = 0; i < this.numParticles; i++) {
       const [x, y] = ParticlePropagator.randomClipCoords()
       coords[2 * i] = x
