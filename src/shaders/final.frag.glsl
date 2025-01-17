@@ -3,9 +3,9 @@ precision highp float;
 
 uniform int u_style;
 
-uniform lowp sampler2D u_particle_texture;
-uniform lowp sampler2D u_colormap_texture;
-uniform highp sampler2D u_velocity_texture;
+uniform sampler2D u_particle_texture;
+uniform sampler2D u_colormap_texture;
+uniform sampler2D u_velocity_texture;
 
 uniform float u_colormap_start;
 uniform float u_colormap_end;
