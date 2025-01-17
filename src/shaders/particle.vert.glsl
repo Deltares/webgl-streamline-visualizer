@@ -3,10 +3,10 @@ precision highp float;
 
 uniform sampler2D u_velocity_texture;
 
-uniform ivec2 u_canvas_size;
 uniform float u_speed_factor;
 uniform float u_speed_exponent;
 
+uniform float u_aspect_ratio;
 uniform vec2 u_scale_in;
 uniform vec2 u_offset_in;
 
@@ -59,7 +59,7 @@ vec2 get_clip_space_velocity(vec2 pos) {
     velocity = normalize(velocity) * speed_compressed;
 
     // Correct the velocity for the aspect ratio of the canvas.
-    velocity.x *= float(u_canvas_size.y) / float(u_canvas_size.x);
+    velocity.x *= u_aspect_ratio;
     velocity.y *= -1.0;
 
     return velocity;

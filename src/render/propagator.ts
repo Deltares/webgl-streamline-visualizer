@@ -202,10 +202,9 @@ export class ParticlePropagator {
     gl.uniform1f(this.program.getUniformLocation('u_dt'), dt)
 
     // Uniforms for correctly scaling the velocity.
-    gl.uniform2i(
-      this.program.getUniformLocation('u_canvas_size'),
-      this.width,
-      this.height
+    gl.uniform1f(
+      this.program.getUniformLocation('u_aspect_ratio'),
+      this.height / this.width
     )
     gl.uniform2f(
       this.program.getUniformLocation('u_scale_in'),
