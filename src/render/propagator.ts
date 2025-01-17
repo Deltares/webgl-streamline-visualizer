@@ -167,7 +167,7 @@ export class ParticlePropagator {
       throw new Error('Failed to create particle buffer.')
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    gl.bufferData(gl.ARRAY_BUFFER, numBytesBuffer, gl.DYNAMIC_DRAW)
+    gl.bufferData(gl.ARRAY_BUFFER, numBytesBuffer, gl.STATIC_DRAW)
     gl.bindBuffer(gl.ARRAY_BUFFER, null)
 
     return buffer
