@@ -15,9 +15,8 @@ uniform float u_dt;
 uniform int u_index_eliminate_start;
 uniform int u_index_eliminate_end;
 
-in vec2 a_position;
-
-out vec2 v_position;
+in vec4 a_position;
+out vec4 v_position;
 
 // From: https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 float gold_noise(vec2 pos, float seed){
@@ -26,7 +25,7 @@ float gold_noise(vec2 pos, float seed){
 }
 
 vec2 random_position() {
-    vec2 pos = a_position;
+    vec2 pos = a_position.xy;
     float x = gold_noise(pos, -123.456) * 2.0 - 1.0;
     float y = gold_noise(pos, 789.012) * 2.0 - 1.0;
     return vec2(x, y);
@@ -65,15 +64,20 @@ vec2 get_clip_space_velocity(vec2 pos) {
 }
 
 void main() {
-    vec2 pos = a_position;
+    vec2 pos = a_position.xy;
+    vec2 velocity = a_position.zw;
+
+    vec2 new_position;
     if (gl_VertexID >= u_index_eliminate_start && gl_VertexID < u_index_eliminate_end) {
         // Randomly selected particles will be eliminated.
-        v_position = random_position();
+        new_position = random_position();
     } else if (pos.x < -1.0 || pos.x > 1.0 || pos.y < -1.0 || pos.y > 1.0) {
         // Also generate new positions if our particle leaves clip space.
-        v_position = random_position();
+        new_position = random_position();
     } else {
-        vec2 velocity = get_clip_space_velocity(pos);
-        v_position = pos + velocity * u_dt;
+        new_position = pos + velocity * u_dt;
     }
+
+    vec2 new_velocity = get_clip_space_velocity(pos);
+    v_position = vec4(new_position, new_velocity);
 }

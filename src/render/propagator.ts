@@ -122,7 +122,7 @@ export class ParticlePropagator {
       gl,
       this.inputBuffer,
       this.program.getAttributeLocation('a_position'),
-      2
+      4
     )
     bindTexture(this.program, 'u_velocity_texture', 0, this.velocityTexture)
     this.bindUniforms(dt)
@@ -160,8 +160,8 @@ export class ParticlePropagator {
   private createParticleBuffer(): WebGLBuffer {
     const gl = this.program.gl
     // Create empty output buffer with buffer size of:
-    //   2 (elements per vec2) * 4 (bytes per float) * numParticlesAllocate
-    const numBytesBuffer = 2 * 4 * this.numParticlesAllocate
+    //   4 (elements per vec4) * 4 (bytes per float) * numParticlesAllocate
+    const numBytesBuffer = 4 * 4 * this.numParticlesAllocate
     const buffer = gl.createBuffer()
     if (buffer === null) {
       throw new Error('Failed to create particle buffer.')
@@ -183,11 +183,15 @@ export class ParticlePropagator {
   }
 
   private createParticles(): Float32Array {
-    const coords = new Float32Array(this.numParticles * 2)
+    const coords = new Float32Array(this.numParticles * 4)
     for (let i = 0; i < this.numParticles; i++) {
       const [x, y] = ParticlePropagator.randomClipCoords()
-      coords[2 * i] = x
-      coords[2 * i + 1] = y
+      const index = 4 * i
+      coords[index] = x
+      coords[index + 1] = y
+      // Initialise velocity at 0, this will be initialised on the first render.
+      coords[index + 2] = 0
+      coords[index + 3] = 0
     }
     return coords
   }
