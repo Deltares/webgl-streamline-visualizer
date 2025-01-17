@@ -27,11 +27,14 @@ export function createTexture(
   }
 
   const numPixels = width * height
-  let format = 0
+  let format: number
+  let internalFormat: number
   if (3 * numPixels === data.length) {
     format = gl.RGB
+    internalFormat = gl.RGB8
   } else if (4 * numPixels === data.length) {
     format = gl.RGBA
+    internalFormat = gl.RGBA8
   } else {
     throw new Error('Only RGB or RGBA textures are supported.')
   }
@@ -44,13 +47,14 @@ export function createTexture(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter)
 
-  gl.texImage2D(
+  gl.texStorage2D(gl.TEXTURE_2D, 1, internalFormat, width, height)
+  gl.texSubImage2D(
     gl.TEXTURE_2D,
-    0,
-    format,
+    0, // level
+    0, // x-offset
+    0, // y-offset
     width,
     height,
-    0,
     format,
     gl.UNSIGNED_BYTE,
     data
