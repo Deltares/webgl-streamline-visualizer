@@ -17,26 +17,13 @@
 export function createTexture(
   gl: WebGL2RenderingContext,
   filter: number,
-  data: Uint8Array | Uint8ClampedArray,
+  data: Uint8Array | Uint8ClampedArray | ImageBitmap,
   width: number,
   height: number
 ): WebGLTexture {
   const texture = gl.createTexture()
   if (texture === null) {
     throw new Error('Failed to create texture.')
-  }
-
-  const numPixels = width * height
-  let format: number
-  let internalFormat: number
-  if (3 * numPixels === data.length) {
-    format = gl.RGB
-    internalFormat = gl.RGB8
-  } else if (4 * numPixels === data.length) {
-    format = gl.RGBA
-    internalFormat = gl.RGBA8
-  } else {
-    throw new Error('Only RGB or RGBA textures are supported.')
   }
 
   // Set texture properties and initialise data.
@@ -47,18 +34,46 @@ export function createTexture(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter)
 
-  gl.texStorage2D(gl.TEXTURE_2D, 1, internalFormat, width, height)
-  gl.texSubImage2D(
-    gl.TEXTURE_2D,
-    0, // level
-    0, // x-offset
-    0, // y-offset
-    width,
-    height,
-    format,
-    gl.UNSIGNED_BYTE,
-    data
-  )
+  if (ArrayBuffer.isView(data)) {
+    const numPixels = width * height
+    let format: number
+    let internalFormat: number
+    if (3 * numPixels === data.length) {
+      format = gl.RGB
+      internalFormat = gl.RGB8
+    } else if (4 * numPixels === data.length) {
+      format = gl.RGBA
+      internalFormat = gl.RGBA8
+    } else {
+      throw new Error('Only RGB or RGBA textures are supported.')
+    }
+
+    // Our data are specified as a typed array.
+    gl.texStorage2D(gl.TEXTURE_2D, 1, internalFormat, width, height)
+    gl.texSubImage2D(
+      gl.TEXTURE_2D,
+      0, // level
+      0, // x-offset
+      0, // y-offset
+      width,
+      height,
+      format,
+      gl.UNSIGNED_BYTE,
+      data
+    )
+  } else {
+    // Our data are specified as an ImageBitmap.
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, width, height)
+    gl.texSubImage2D(
+      gl.TEXTURE_2D,
+      0, // level
+      0, // x-offset
+      0, // y-offset
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      data
+    )
+  }
 
   gl.bindTexture(gl.TEXTURE_2D, null)
 

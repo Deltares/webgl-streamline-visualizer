@@ -15,6 +15,7 @@ export class ParticleRenderer {
   private vertexArray: WebGLVertexArrayObject | null
   private widthParticlePositionTexture: number
   private heightParticlePositionTexture: number
+  private isSpriteRenderer: boolean
 
   constructor(
     program: ShaderProgram,
@@ -24,7 +25,8 @@ export class ParticleRenderer {
     particleSize: number,
     particleTexture: WebGLTexture,
     widthParticlePositionTexture: number,
-    heightParticlePositionTexture: number
+    heightParticlePositionTexture: number,
+    isSpriteRenderer: boolean
   ) {
     this.program = program
 
@@ -40,6 +42,8 @@ export class ParticleRenderer {
     this.positionBuffer = null
     this.texCoordBuffer = null
     this.vertexArray = null
+
+    this.isSpriteRenderer = isSpriteRenderer
   }
 
   initialise(): void {
@@ -94,12 +98,14 @@ export class ParticleRenderer {
     const gl = this.program.gl
     this.program.use()
 
-    // We keep the current state of the frame buffer and render the particles on
-    // top of it, ignoring alpha for this blending as it has already been taken
-    // care of in the texture render.
-    gl.enable(gl.BLEND)
-    gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX)
-    gl.blendFunc(gl.ONE, gl.ONE)
+    if (!this.isSpriteRenderer) {
+      // We keep the current state of the frame buffer and render the particles on
+      // top of it, ignoring alpha for this blending as it has already been taken
+      // care of in the texture render.
+      gl.enable(gl.BLEND)
+      gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX)
+      gl.blendFunc(gl.ONE, gl.ONE)
+    }
 
     gl.bindVertexArray(this.vertexArray)
     this.updateParticleTextureFromBuffer(particleBuffer)
@@ -189,6 +195,10 @@ export class ParticleRenderer {
     gl.uniform1f(
       this.program.getUniformLocation('u_aspect_ratio'),
       this.width / this.height
+    )
+    gl.uniform1i(
+      this.program.getUniformLocation('u_is_sprite'),
+      this.isSpriteRenderer ? 1 : 0
     )
 
     // Width of the data texture to retrieve the particle positions in the

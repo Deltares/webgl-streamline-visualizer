@@ -1,16 +1,18 @@
 import './vortex.css'
+import spriteUrl from './rubber_duck.png'
 
 import { initialiseControl, initialiseVisualiser } from './vortex-base'
 import { StreamlineStyle, type StreamlineVisualiserOptions } from '@/index'
 
-const numParticles = 10000
+const numParticles = 100
 const options: StreamlineVisualiserOptions = {
   style: StreamlineStyle.LightParticlesOnMagnitude,
   numEliminatePerSecond: numParticles,
-  particleSize: 3,
+  particleSize: 60,
   speedFactor: 0.4,
-  fadeAmountPerSecond: 3,
-  maxDisplacement: 1
+  fadeAmountPerSecond: 1,
+  maxDisplacement: 1,
+  spriteUrl: new URL(spriteUrl, window.location.origin)
 }
 
 initialiseVisualiser(numParticles, options)
