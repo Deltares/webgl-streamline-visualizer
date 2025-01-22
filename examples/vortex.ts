@@ -71,7 +71,7 @@ function createVelocityImage(width: number, height: number): VelocityImage {
   )
 }
 
-function initialiseVisualiser(): StreamlineVisualiser | null {
+async function initialiseVisualiser(): Promise<StreamlineVisualiser> {
   // Get the canvas and make sure its contents are rendered at the same
   // resolution as its size.
   const canvas = document.getElementById('canvas') as HTMLCanvasElement
@@ -83,8 +83,7 @@ function initialiseVisualiser(): StreamlineVisualiser | null {
   // Initialise WebGL2 context.
   const gl = canvas.getContext('webgl2')
   if (!gl) {
-    console.error('Could not create WebGL2 rendering context.')
-    return null
+    throw new Error('Could not create WebGL2 rendering context.')
   }
 
   // Create visualiser.
@@ -111,7 +110,7 @@ function initialiseVisualiser(): StreamlineVisualiser | null {
   const colormap = createColormap()
   const velocityImage = createVelocityImage(width, height)
 
-  visualiser.initialise(colormap)
+  await visualiser.initialise(colormap)
   visualiser.setVelocityImage(velocityImage, true)
 
   // Enable rendering mode in the visualiser.
@@ -142,5 +141,8 @@ function initialiseControl(visualiser: StreamlineVisualiser): void {
   control.attachVisualiser(visualiser)
 }
 
-const visualiser = initialiseVisualiser()
-if (visualiser) initialiseControl(visualiser)
+initialiseVisualiser()
+  .then(visualiser => {
+    initialiseControl(visualiser)
+  })
+  .catch(error => console.error(`Failed to initialise visualiser: ${error}`))

@@ -268,7 +268,6 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       colorScaleRange,
       this.signal
     )
-    this._visualiser.initialise(colormap)
 
     // Fetch available WMS times and elevations.
     const response = await fetchWMSAvailableTimesAndElevations(
@@ -276,6 +275,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       this.options.layer,
       this.signal
     )
+
     this.times = response.times
     this.elevationBounds = response.elevationBounds
 
@@ -283,7 +283,9 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.elevation = elevation ?? null
     this.colorScaleRange = colorScaleRange ?? null
 
-    // Fetch first velocity field; this will also enable rendering.
+    // Initialise and fetch first velocity field; this will also enable
+    // rendering.
+    await this._visualiser.initialise(colormap)
     await this.updateVelocityField(true)
 
     // Register event listeners for map changes. This will also be called when

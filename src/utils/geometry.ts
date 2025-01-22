@@ -2,7 +2,7 @@ import {
   ShaderProgram,
   bindAttribute,
   createAndFillStaticBuffer
-} from './shaderprogram'
+} from './shader-program'
 
 export function createRectangleVertexArray(
   program: ShaderProgram,

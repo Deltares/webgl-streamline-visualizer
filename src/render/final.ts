@@ -1,6 +1,6 @@
 import { Colormap } from '../utils/colormap'
 import { createRectangleVertexArray } from '../utils/geometry'
-import { ShaderProgram, bindTexture } from '../utils/shaderprogram'
+import { ShaderProgram, bindTexture } from '../utils/shader-program'
 import { VelocityImage } from '../utils/wms'
 
 export interface BoundingBoxScaling {

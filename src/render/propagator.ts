@@ -3,7 +3,7 @@ import {
   ShaderProgram,
   bindAttribute,
   bindTexture
-} from '../utils/shaderprogram'
+} from '../utils/shader-program'
 import { VelocityImage } from '../utils/wms'
 
 export class ParticlePropagator {
