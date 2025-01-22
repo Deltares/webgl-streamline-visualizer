@@ -42,10 +42,10 @@ void main() {
             0.0, 1.0
         );
         // Interpolate the colormap texture for this value.
-        vec4 magnitude_color = texture(u_colormap_texture, colormap_coords);
+        lowp vec4 magnitude_color = texture(u_colormap_texture, colormap_coords);
 
         // Interpolate the particle texture at this point.
-        vec4 particle_color = texture(u_particle_texture, v_tex_coord);
+        lowp vec4 particle_color = texture(u_particle_texture, v_tex_coord);
 
         // Blend the velocity magnitude texture with the particle texture.
         if (u_style == 0) {

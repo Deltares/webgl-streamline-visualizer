@@ -44,9 +44,7 @@ function createVelocityImage(width: number, height: number): VelocityImage {
 
       // (Undamped) Taylor-Green vortex, velocities in the range [-1, 1].
       const u = Math.sin(x) * Math.cos(y)
-      // TODO: this should have a minus sign! There is an inversion of
-      //       coordinates in the streamline renderer.
-      const v = Math.cos(x) * Math.sin(y)
+      const v = -Math.cos(x) * Math.sin(y)
 
       // Translate to the range [0, 255] and round; this is the inverse
       // operation from how we translate pixel values to velocities.

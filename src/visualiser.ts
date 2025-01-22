@@ -168,6 +168,10 @@ export class StreamlineVisualiser {
 
     this.previousParticleTexture = this.createZeroTexture()
     this.currentParticleTexture = this.createZeroTexture()
+    this.textureRenderer.resetParticleTextures(
+      this.previousParticleTexture,
+      this.currentParticleTexture
+    )
   }
 
   start(): void {
@@ -329,11 +333,7 @@ export class StreamlineVisualiser {
         const fadeProbability = fadeAmount / fadeAmountMin
         fadeAmount = Math.random() < fadeProbability ? fadeAmountMin : 0
       }
-      this.textureRenderer.render(
-        this.previousParticleTexture,
-        fadeAmount,
-        this.currentParticleTexture
-      )
+      this.textureRenderer.render(this.previousParticleTexture, fadeAmount)
 
       // Update the particle positions into an output buffer.
       this.particlePropagator.update(dtSub)
@@ -502,10 +502,18 @@ export class StreamlineVisualiser {
     const temp = this.previousParticleTexture
     this.previousParticleTexture = this.currentParticleTexture
     this.currentParticleTexture = temp
+    // Also swap frame buffers in the texture renderer, as those render into the
+    // swapped textures.
+    this.textureRenderer?.swapBuffers()
   }
 
   private resetParticleTexture(): void {
     this.previousParticleTexture = this.createZeroTexture()
+    this.currentParticleTexture = this.createZeroTexture()
+    this.textureRenderer?.resetParticleTextures(
+      this.previousParticleTexture,
+      this.currentParticleTexture
+    )
   }
 
   private updateVelocityImage(velocityImage: VelocityImage): void {

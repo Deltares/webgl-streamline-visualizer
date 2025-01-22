@@ -56,7 +56,7 @@ export class ParticleRenderer {
     this.positionBuffer = positionBuffer
     this.texCoordBuffer = texCoordBuffer
     this.vertexArray = vertexArray
-    this.particlePositionTexture = this.createParticlePositionTexture()
+    this.particlePositionTexture = this.resetParticlePositionTexture()
   }
 
   destruct(): void {
@@ -82,6 +82,7 @@ export class ParticleRenderer {
     this.numParticles = numParticles
     this.widthParticlePositionTexture = widthParticlePositionTexture
     this.heightParticlePositionTexture = heightParticlePositionTexture
+    this.particlePositionTexture = this.resetParticlePositionTexture()
   }
 
   render(particleBuffer: WebGLBuffer): void {
@@ -117,8 +118,12 @@ export class ParticleRenderer {
     gl.bindVertexArray(null)
   }
 
-  private createParticlePositionTexture(): WebGLTexture {
+  private resetParticlePositionTexture(): WebGLTexture {
     const gl = this.program.gl
+
+    if (this.particlePositionTexture) {
+      gl.deleteTexture(this.particlePositionTexture)
+    }
 
     const texture = gl.createTexture()
     if (texture === null) {
@@ -126,6 +131,15 @@ export class ParticleRenderer {
     }
 
     gl.bindTexture(gl.TEXTURE_2D, texture)
+
+    // Allocate storage for the texture.
+    gl.texStorage2D(
+      gl.TEXTURE_2D,
+      1,
+      gl.RG32F,
+      this.widthParticlePositionTexture,
+      this.heightParticlePositionTexture
+    )
 
     // We use a 32-bit floating point texture for the particles that we do not
     // want to (and cannot) interpolate, so use nearest neighbour filtering.
@@ -146,21 +160,17 @@ export class ParticleRenderer {
     const gl = this.program.gl
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, particleBuffer)
     gl.bindTexture(gl.TEXTURE_2D, this.particlePositionTexture)
-    const bufferOffset = 0
-    // This produces a strange warning in Firefox: "WebGL warning: texImage:
-    // Uploads from a buffer with a final row with a byte count smaller than the
-    // row stride can incur extra overhead."
-    // It seems to have no effect otherwise.
-    gl.texImage2D(
+
+    gl.texSubImage2D(
       gl.TEXTURE_2D,
-      0,
-      gl.RG32F,
+      0, // level
+      0, // x-offset
+      0, // y-offset
       this.widthParticlePositionTexture,
       this.heightParticlePositionTexture,
-      0,
       gl.RG,
       gl.FLOAT,
-      bufferOffset // offset into the PIXEL_UNPACK_BUFFER
+      0 // offset into the pixel unpack buffer
     )
 
     gl.bindTexture(gl.TEXTURE_2D, null)
@@ -181,16 +191,8 @@ export class ParticleRenderer {
       this.width / this.height
     )
 
-    // Properties of the data texture used to get the particle positions in the
+    // Width of the data texture to retrieve the particle positions in the
     // vertex shader.
-    gl.uniform1f(
-      this.program.getUniformLocation('u_step_x'),
-      1.0 / this.widthParticlePositionTexture
-    )
-    gl.uniform1f(
-      this.program.getUniformLocation('u_step_y'),
-      1.0 / this.heightParticlePositionTexture
-    )
     gl.uniform1i(
       this.program.getUniformLocation('u_width'),
       this.widthParticlePositionTexture

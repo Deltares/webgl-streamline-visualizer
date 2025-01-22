@@ -195,9 +195,10 @@ export async function fetchWMSVelocityField(
   const receivedWidth = fileDirectory.ImageWidth!
   const receivedHeight = fileDirectory.ImageLength!
   const uOffset = fileDirectory.ModelTiepoint![0]
-  const vOffset = fileDirectory.ModelTiepoint![1]
   const uScale = fileDirectory.ModelPixelScale![0] * 255
-  const vScale = fileDirectory.ModelPixelScale![1] * 255
+  // The y-offset and scale are negated, for some reason.
+  const vOffset = -fileDirectory.ModelTiepoint![1]
+  const vScale = -fileDirectory.ModelPixelScale![1] * 255
 
   return new VelocityImage(
     data,
