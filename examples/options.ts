@@ -159,7 +159,10 @@ export class VisualiserOptionsControl extends HTMLElement {
 
   private createNumericOptionsControl(
     label: string,
-    key: keyof Omit<StreamlineVisualiserOptions, 'style' | 'particleColor'>,
+    key: keyof Omit<
+      StreamlineVisualiserOptions,
+      'style' | 'particleColor' | 'spriteUrl'
+    >,
     step: number,
     defaultValue: number = 0
   ): HTMLLabelElement {
