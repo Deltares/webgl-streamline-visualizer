@@ -47,6 +47,10 @@ export class ParticleRenderer {
   }
 
   initialise(): void {
+    // We need to flip the vertical texture coordinate since we are using a
+    // texture loaded from an image, which is vertically flipped w.r.t. clip
+    // space coordinates.
+    const doFlipV = true
     const [positionBuffer, texCoordBuffer, vertexArray] =
       createRectangleVertexArray(
         this.program,
@@ -54,6 +58,7 @@ export class ParticleRenderer {
         0.5,
         -0.5,
         0.5,
+        doFlipV,
         'a_position',
         'a_tex_coord'
       )

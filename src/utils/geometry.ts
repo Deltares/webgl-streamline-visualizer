@@ -10,6 +10,7 @@ export function createRectangleVertexArray(
   xMax: number,
   yMin: number,
   yMax: number,
+  doFlipV: boolean,
   positionAttribute: string,
   vertexCoordAttribute: string
 ): [WebGLBuffer, WebGLBuffer, WebGLVertexArrayObject] {
@@ -21,7 +22,12 @@ export function createRectangleVertexArray(
   gl.bindVertexArray(vertexArray)
 
   const positions = [xMax, yMax, xMin, yMax, xMax, yMin, xMin, yMin]
-  const texCoords = [1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0]
+  // Texture coordinate v can either run in the same direction as the clip space
+  // y-axis, or in the opposite direction.
+  const texCoords = doFlipV
+    ? [1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0] // flipped V
+    : [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0] // unflipped V
+
   const positionBuffer = createAndFillStaticBuffer(
     gl,
     new Float32Array(positions)

@@ -30,16 +30,25 @@ void main() {
 
     vec2 position = a_position;
     if (u_is_sprite == 1) {
-        // When rendering to the canvas instead of a texture, clip space
-        // coordinates are inverted for some reason.
-        particle_position.y *= -1.0;
-
-        // Rotate the quad according to the velocity direction.
+        // Rotate the quad according to the velocity direction. We take the
+        // velocity direction as the y-axis of a local coordinate system, and
+        // a vector perpendicular to that as the x-axis. This gives two basis
+        // vectors:
+        //
+        //     e1 = (v, -u)    e2 = (u, v)
+        //
+        // Hence, a transformation matrix from world coordinate to this local
+        // coordinate system is:
+        //
+        //     [ v u ]
+        //     [-u v ]
+        //
         vec2 direction = normalize(particle_data.zw);
-        position = vec2(
-            direction.y * a_position.x - direction.x * a_position.y,
-            direction.x * a_position.x + direction.y * a_position.y
+        mat2 transformation = mat2(
+            vec2(-direction.y, direction.x),
+            direction
         );
+        position = transformation * position;
     }
 
     // Scale quad and correct for aspect ratio.
