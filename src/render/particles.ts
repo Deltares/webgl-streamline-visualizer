@@ -1,5 +1,6 @@
 import { createRectangleVertexArray } from '../utils/geometry'
 import { ShaderProgram, bindTexture } from '../utils/shader-program'
+import type { BoundingBoxScaling } from './final'
 
 export class ParticleRenderer {
   public particleSize: number
@@ -94,12 +95,18 @@ export class ParticleRenderer {
     this.particlePositionTexture = this.resetParticlePositionTexture()
   }
 
-  render(particleBuffer: WebGLBuffer): void {
+  render(particleBuffer: WebGLBuffer, scaling?: BoundingBoxScaling): void {
     if (!this.particlePositionTexture) {
       throw new Error(
         'No particle position texture defined, particle renderer was not initialised?'
       )
     }
+    if (this.isSpriteRenderer && scaling === undefined) {
+      throw new Error(
+        'Must specify bounding box scaling when rendering sprites.'
+      )
+    }
+
     const gl = this.program.gl
     this.program.use()
 
@@ -125,7 +132,7 @@ export class ParticleRenderer {
       1,
       this.particlePositionTexture
     )
-    this.bindUniforms()
+    this.bindUniforms(scaling)
 
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.numParticles)
 
@@ -192,7 +199,7 @@ export class ParticleRenderer {
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null)
   }
 
-  private bindUniforms(): void {
+  private bindUniforms(scaling?: BoundingBoxScaling): void {
     const gl = this.program.gl
 
     // Properties of the texture used to render the particle sprites; rescale
@@ -215,6 +222,18 @@ export class ParticleRenderer {
     gl.uniform1i(
       this.program.getUniformLocation('u_width'),
       this.widthParticlePositionTexture
+    )
+
+    // Scaling parameters for the bounding box.
+    gl.uniform2f(
+      this.program.getUniformLocation('u_bbox_scale'),
+      scaling?.scaleX ?? 1.0,
+      scaling?.scaleY ?? 1.0
+    )
+    gl.uniform2f(
+      this.program.getUniformLocation('u_bbox_offset'),
+      scaling?.offsetX ?? 0.0,
+      scaling?.offsetY ?? 0.0
     )
   }
 }
