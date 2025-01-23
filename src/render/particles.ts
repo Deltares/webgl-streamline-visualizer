@@ -103,13 +103,16 @@ export class ParticleRenderer {
     const gl = this.program.gl
     this.program.use()
 
+    gl.enable(gl.BLEND)
     if (!this.isSpriteRenderer) {
       // We keep the current state of the frame buffer and render the particles on
       // top of it, ignoring alpha for this blending as it has already been taken
       // care of in the texture render.
-      gl.enable(gl.BLEND)
       gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX)
       gl.blendFunc(gl.ONE, gl.ONE)
+    } else {
+      gl.blendEquation(gl.FUNC_ADD)
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     }
 
     gl.bindVertexArray(this.vertexArray)
@@ -127,6 +130,7 @@ export class ParticleRenderer {
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.numParticles)
 
     gl.bindVertexArray(null)
+    gl.disable(gl.BLEND)
   }
 
   private resetParticlePositionTexture(): WebGLTexture {
