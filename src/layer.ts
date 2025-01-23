@@ -30,6 +30,7 @@ export interface WMSStreamlineLayerOptions {
   downsampleFactorWMS?: number
   speedExponent?: number
   particleColor?: string
+  spriteUrl?: URL
   transformRequest?: TransformRequestFunction
 }
 
@@ -526,7 +527,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       fadeAmountPerSecond: options.fadeAmountPerSecond,
       maxDisplacement: WMSStreamlineLayer.MAX_PARTICLE_DISPLACEMENT,
       speedExponent: options.speedExponent,
-      particleColor: options.particleColor
+      particleColor: options.particleColor,
+      spriteUrl: options.spriteUrl
     }
   }
 }

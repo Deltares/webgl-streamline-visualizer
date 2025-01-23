@@ -12,6 +12,9 @@ uniform float u_aspect_ratio;
 
 uniform lowp int u_is_sprite;
 
+uniform vec2 u_bbox_scale;
+uniform vec2 u_bbox_offset;
+
 out vec2 v_tex_coord;
 
 void main() {
@@ -59,5 +62,9 @@ void main() {
         position + particle_position,
         0.0, 1.0
     );
+
+    // Scale bounding box.
+    gl_Position.xy = gl_Position.xy * u_bbox_scale + u_bbox_offset;
+
     v_tex_coord = a_tex_coord;
 }

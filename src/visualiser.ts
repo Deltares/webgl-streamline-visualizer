@@ -238,8 +238,11 @@ export class StreamlineVisualiser {
     this.previousParticleTexture = this.createZeroTexture()
     this.currentParticleTexture = this.createZeroTexture()
 
-    this.particlePropagator?.setDimensions(width, height)
-    this.particleRenderer?.setDimensions(width, height)
+    this.particlePropagator.setDimensions(width, height)
+    this.particleRenderer.setDimensions(width, height)
+    if (this.spriteRenderer) {
+      this.spriteRenderer.setDimensions(width, height)
+    }
 
     if (this.velocityImage) {
       // We need to recompute the time step because our pixel size has changed.
@@ -397,7 +400,7 @@ export class StreamlineVisualiser {
 
     if (this.spriteRenderer) {
       // Render the sprite in the final position, on top of everything.
-      this.spriteRenderer.render(this.particlePropagator.buffer)
+      this.spriteRenderer.render(this.particlePropagator.buffer, this.scaling)
     }
 
     // Swap previous and current particle texture.
