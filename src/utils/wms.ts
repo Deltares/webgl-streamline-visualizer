@@ -147,6 +147,13 @@ export async function fetchWMSVelocityField(
     url.searchParams.append('elevation', `${elevation}`)
   }
 
+  return fetchGeoTiffVelocityField(url, signal)
+}
+
+export async function fetchGeoTiffVelocityField(
+  url: URL,
+  signal?: AbortSignal
+): Promise<VelocityImage> {
   const response = await fetch(url, { signal })
   const arrayBuffer = await response.arrayBuffer()
 
