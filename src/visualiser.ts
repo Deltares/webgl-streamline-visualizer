@@ -518,16 +518,11 @@ export class StreamlineVisualiser {
 
     const x = radius
     const y = radius
-    const gradient = context.createRadialGradient(x, y, 0, x, y, radius)
-
     const particleColor = this._options.particleColor ?? 'black'
-    gradient.addColorStop(0, particleColor)
-    gradient.addColorStop(0.8, particleColor)
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
 
     context.beginPath()
     context.arc(x, y, radius, 0, 2 * Math.PI, false)
-    context.fillStyle = gradient
+    context.fillStyle = particleColor
     context.fill()
 
     const data = context.getImageData(0, 0, width, height).data
