@@ -80,6 +80,9 @@ export class ShaderProgram {
   }
 
   getAttributeLocation(name: string): number {
+    if (!this.isLinked) {
+      throw new Error('Link shader program before getting attribute locations.')
+    }
     const location = this.attributes.get(name)
     if (location === undefined)
       throw new Error(`No attribute "${name}" exists.`)
@@ -87,6 +90,9 @@ export class ShaderProgram {
   }
 
   getUniformLocation(name: string): WebGLUniformLocation {
+    if (!this.isLinked) {
+      throw new Error('Link shader program before getting uniform locations.')
+    }
     const location = this.uniforms.get(name)
     if (location === undefined) throw new Error(`No uniform "${name}" exists.`)
     return location
