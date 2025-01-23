@@ -158,6 +158,14 @@ export async function fetchWMSVelocityField(
     url.searchParams.append('elevation', `${elevation}`)
   }
 
+  return fetchGeoTiffVelocityField(url, signal, transformRequest)
+}
+
+export async function fetchGeoTiffVelocityField(
+  url: URL,
+  signal?: AbortSignal,
+  transformRequest?: TransformRequestFunction
+): Promise<VelocityImage> {
   const request = new Request(url)
   const transformedRequest = (await transformRequest?.(request)) ?? request
   const response = await fetch(new Request(transformedRequest, { signal }))
