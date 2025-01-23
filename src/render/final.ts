@@ -49,6 +49,12 @@ export class FinalRenderer {
 
   initialise(): void {
     const gl = this.program.gl
+    // In the final renderer, we need both a flipped and an unflipped vertical
+    // texture coordinate. We need the flipped coordinate to obtain the velocity
+    // field (which is loaded as an image), and the unflipped to coordinate to
+    // render the particle texture (which is unflipped because it was rendered
+    // in a framebuffer).
+    const doFlipV = false
     const [positionBuffer, texCoordBuffer, vertexArray] =
       createRectangleVertexArray(
         this.program,
@@ -56,6 +62,7 @@ export class FinalRenderer {
         1.0,
         -1.0,
         1.0,
+        doFlipV,
         'a_position',
         'a_tex_coord'
       )

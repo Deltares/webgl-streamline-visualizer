@@ -14,6 +14,7 @@ uniform vec2 u_scale;
 uniform vec2 u_offset;
 
 in vec2 v_tex_coord;
+in vec2 v_flipped_tex_coord;
 
 out vec4 color;
 
@@ -31,8 +32,10 @@ float get_speed(vec2 pos) {
 }
 
 void main() {
-    // Get the speed at the current point (in physical units).
-    float speed = get_speed(v_tex_coord);
+    // Get the speed at the current point (in physical units), we need flipped
+    // texture coordinates because the velocity texture was loaded from an
+    // image and therefore flipped vertically.
+    float speed = get_speed(v_flipped_tex_coord);
 
     if (speed > 0.0) {
         // Find the coordinate into the colormap texture for this speed.

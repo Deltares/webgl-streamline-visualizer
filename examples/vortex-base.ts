@@ -35,7 +35,8 @@ function createVelocityImage(width: number, height: number): VelocityImage {
 
   const data: number[] = []
   for (let row = 0; row < height; row++) {
-    const y = (row / height) * Math.PI
+    // Images are always specified with flipped y-coordinate.
+    const y = (1.0 - row / height) * Math.PI
     for (let col = 0; col < width; col++) {
       const x = (col / width) * Math.PI
 

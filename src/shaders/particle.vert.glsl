@@ -33,9 +33,12 @@ vec2 random_position() {
 
 vec2 get_clip_space_velocity(vec2 pos) {
     // Position is in clip space, but should be transformed to texture
-    // coordinates.
-    vec2 pos_texture = 0.5 * (pos + 1.0);
-
+    // coordinates. Because the velocity texture was loaded from an image, it is
+    // vertically flipped, so the v texture coordinate is inverted.
+    vec2 pos_texture = vec2(
+        0.5 + 0.5 * pos.x,
+        0.5 - 0.5 * pos.y
+    );
     vec2 velocity_raw = texture(u_velocity_texture, pos_texture).xy;
 
     // r = g = 255 means we have no velocity, set it to zero in that case.
