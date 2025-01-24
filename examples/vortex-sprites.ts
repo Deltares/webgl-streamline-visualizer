@@ -7,11 +7,11 @@ import { StreamlineStyle, type StreamlineVisualiserOptions } from '@/index'
 const numParticles = 100
 const options: StreamlineVisualiserOptions = {
   style: StreamlineStyle.LightParticlesOnMagnitude,
-  numEliminatePerSecond: numParticles,
   particleSize: 16,
   speedFactor: 0.4,
   fadeAmountPerSecond: 1,
   maxDisplacement: 1,
+  maxAge: 5,
   spriteUrl: new URL(spriteUrl, window.location.origin)
 }
 

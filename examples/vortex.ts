@@ -6,11 +6,11 @@ import { StreamlineStyle, type StreamlineVisualiserOptions } from '@/index'
 const numParticles = 10000
 const options: StreamlineVisualiserOptions = {
   style: StreamlineStyle.LightParticlesOnMagnitude,
-  numEliminatePerSecond: numParticles,
   particleSize: 3,
   speedFactor: 0.4,
   fadeAmountPerSecond: 3,
-  maxDisplacement: 1
+  maxDisplacement: 1,
+  maxAge: 2.0
 }
 
 initialiseVisualiser(numParticles, options)

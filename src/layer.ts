@@ -28,6 +28,7 @@ export interface WMSStreamlineLayerOptions {
   speedFactor: number
   fadeAmountPerSecond: number
   downsampleFactorWMS?: number
+  maxAge?: number
   speedExponent?: number
   particleColor?: string
   spriteUrl?: URL
@@ -384,9 +385,6 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
   setNumParticles(numParticles: number): void {
     this._visualiser?.setNumParticles(numParticles)
-    this._visualiser?.updateOptions({
-      numEliminatePerSecond: numParticles
-    })
   }
 
   setVisualiserOptions(options: Partial<StreamlineVisualiserOptions>): void {
@@ -521,11 +519,11 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   ): StreamlineVisualiserOptions {
     return {
       style: options.streamlineStyle,
-      numEliminatePerSecond: options.numParticles,
       particleSize: options.particleSize,
       speedFactor: options.speedFactor,
       fadeAmountPerSecond: options.fadeAmountPerSecond,
       maxDisplacement: WMSStreamlineLayer.MAX_PARTICLE_DISPLACEMENT,
+      maxAge: options.maxAge ?? 1.0,
       speedExponent: options.speedExponent,
       particleColor: options.particleColor,
       spriteUrl: options.spriteUrl
