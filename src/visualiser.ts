@@ -383,7 +383,7 @@ export class StreamlineVisualiser {
       // Use the updated particle position to render sprites at those locations.
       // These particles are rendered on top of the previous particle frame to
       // produce the fading "comet trails".
-      this.particleRenderer.render(this.particlePropagator.buffer)
+      this.particleRenderer.render(this.particlePropagator.buffers)
 
       // Do not swap at the last time step as we need the latest particle
       // texture for the final render.
@@ -398,7 +398,7 @@ export class StreamlineVisualiser {
 
     if (this.spriteRenderer) {
       // Render the sprite in the final position, on top of everything.
-      this.spriteRenderer.render(this.particlePropagator.buffer, this.scaling)
+      this.spriteRenderer.render(this.particlePropagator.buffers, this.scaling)
     }
 
     // Swap previous and current particle texture.
