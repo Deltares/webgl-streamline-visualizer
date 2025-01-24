@@ -25,11 +25,11 @@ import { FragmentShader, VertexShader } from './utils/shader'
 
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
-  numEliminatePerSecond: number
   particleSize: number
   speedFactor: number
   fadeAmountPerSecond: number
   maxDisplacement: number
+  maxAge: number
   speedExponent?: number
   particleColor?: string
   spriteUrl?: URL
@@ -147,7 +147,7 @@ export class StreamlineVisualiser {
       this.height,
       this._numParticles,
       this.numParticlesAllocate,
-      this._options.numEliminatePerSecond,
+      this._options.maxAge,
       speedCurve
     )
     this.particleRenderer = new ParticleRenderer(
@@ -321,8 +321,7 @@ export class StreamlineVisualiser {
       this.dtMin = this.computeMinimumTimeStep()
     }
 
-    this.particlePropagator.numEliminatePerSecond =
-      this._options.numEliminatePerSecond
+    this.particlePropagator.setMaxAge(this._options.maxAge)
 
     const curve = StreamlineVisualiser.computeSpeedCurve(
       this.colorMap,

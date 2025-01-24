@@ -52,13 +52,12 @@ export class ParticleBuffers {
 }
 
 export class ParticlePropagator {
-  public numEliminatePerSecond: number
-
   private program: ShaderProgram
   private width: number
   private height: number
   private numParticles: number
   private numParticlesAllocate: number
+  private maxAge: number
   private speedCurve: SpeedCurve
   private inputBuffers: ParticleBuffers | null
   private outputBuffers: ParticleBuffers | null
@@ -72,7 +71,7 @@ export class ParticlePropagator {
     height: number,
     numParticles: number,
     numParticlesAllocate: number,
-    numEliminatePerSecond: number,
+    maxAge: number,
     speedCurve: SpeedCurve
   ) {
     this.program = program
@@ -81,7 +80,7 @@ export class ParticlePropagator {
 
     this.numParticles = numParticles
     this.numParticlesAllocate = numParticlesAllocate
-    this.numEliminatePerSecond = numEliminatePerSecond
+    this.maxAge = maxAge
 
     this.velocityImage = null
     this.velocityTexture = null
@@ -99,12 +98,6 @@ export class ParticlePropagator {
       )
     }
     return this.outputBuffers
-  }
-
-  private get maxAge(): number {
-    // Compute the maximum age of the particles based on the number of particles
-    // eliminated per second. It is specified like this for historical reasons.
-    return this.numParticles / this.numEliminatePerSecond
   }
 
   initialise(): void {
@@ -138,6 +131,13 @@ export class ParticlePropagator {
     this.numParticles = numParticles
     this.numParticlesAllocate = numParticlesAllocate
 
+    this.resetBuffers()
+  }
+
+  setMaxAge(maxAge: number): void {
+    this.maxAge = maxAge
+
+    // Reset all particle ages to spread all over the new age range.
     this.resetBuffers()
   }
 

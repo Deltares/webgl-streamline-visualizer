@@ -71,6 +71,12 @@ export class VisualiserOptionsControl extends HTMLElement {
       'maxDisplacement',
       1
     )
+    const maxAgeControl = this.createNumericOptionsControl(
+      'Maximum particle age [s]',
+      'maxAge',
+      0.1,
+      1
+    )
     const speedExponentControl = this.createNumericOptionsControl(
       'Speed exponent',
       'speedExponent',
@@ -84,6 +90,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(speedFactorControl)
     this.container.appendChild(fadeAmountControl)
     this.container.appendChild(maximumDisplacementControl)
+    this.container.appendChild(maxAgeControl)
     this.container.appendChild(speedExponentControl)
   }
 
@@ -138,9 +145,6 @@ export class VisualiserOptionsControl extends HTMLElement {
 
     const setNumParticles = (numParticles: number) => {
       if (!this.visualiser) return
-      // Set the number of eliminated particles per second to the number of
-      // particles; this works well in almost all cases.
-      this.visualiser.updateOptions({ numEliminatePerSecond: numParticles })
       this.visualiser.setNumParticles(numParticles)
     }
     const [labelElement, inputElement] = this.createNumericInput(
