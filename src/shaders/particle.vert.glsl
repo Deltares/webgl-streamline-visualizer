@@ -12,11 +12,13 @@ uniform vec2 u_offset_in;
 
 uniform float u_dt;
 
-uniform int u_index_eliminate_start;
-uniform int u_index_eliminate_end;
+uniform float u_max_age;
 
 in vec4 a_particle_data;
+in float a_particle_age;
+
 out vec4 v_new_particle_data;
+out float v_new_particle_age;
 
 #include is_missing_velocity;
 
@@ -73,16 +75,26 @@ void main() {
     vec2 velocity = a_particle_data.zw;
 
     vec2 new_position;
-    if (gl_VertexID >= u_index_eliminate_start && gl_VertexID < u_index_eliminate_end) {
-        // Randomly selected particles will be eliminated.
+    float new_age;
+    if (a_particle_age > u_max_age) {
+        // Particles that are too old will be eliminated.
         new_position = random_position();
+        new_age = 0.0;
+    } else if (velocity.x == 0.0 && velocity.y == 0.0) {
+        // Particles in regions without velocity will be eliminated.
+        new_position = random_position();
+        new_age = 0.0;
     } else if (pos.x < -1.0 || pos.x > 1.0 || pos.y < -1.0 || pos.y > 1.0) {
         // Also generate new positions if our particle leaves clip space.
         new_position = random_position();
+        new_age = 0.0;
     } else {
         new_position = pos + velocity * u_dt;
+        new_age = a_particle_age + u_dt;
     }
 
     vec2 new_velocity = get_clip_space_velocity(new_position);
+
     v_new_particle_data = vec4(new_position, new_velocity);
+    v_new_particle_age = new_age;
 }

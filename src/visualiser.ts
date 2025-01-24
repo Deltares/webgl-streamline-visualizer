@@ -446,7 +446,7 @@ export class StreamlineVisualiser {
       this.gl,
       particleVertexShader,
       placeholderFragmentShader,
-      ['v_new_particle_data']
+      ['v_new_particle_data', 'v_new_particle_age']
     )
     const programRenderParticles = new ShaderProgram(
       this.gl,
