@@ -83,6 +83,6 @@ void main() {
         new_position = pos + velocity * u_dt;
     }
 
-    vec2 new_velocity = get_clip_space_velocity(pos);
+    vec2 new_velocity = get_clip_space_velocity(new_position);
     v_position = vec4(new_position, new_velocity);
 }
