@@ -83,7 +83,7 @@ export class ParticlePropagator {
 
   setVelocityImage(velocityImage: VelocityImage): void {
     this.velocityImage = velocityImage
-    this.velocityTexture = velocityImage.toTexture(this.program.gl, true)
+    this.velocityTexture = velocityImage.toTexture(this.program.gl, false)
   }
 
   setNumParticles(numParticles: number, numParticlesAllocate: number): void {
