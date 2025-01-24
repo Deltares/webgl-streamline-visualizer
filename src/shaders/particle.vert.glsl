@@ -77,15 +77,21 @@ void main() {
     vec2 new_position;
     float new_age;
     if (a_particle_age > u_max_age) {
-        // Particles that are too old will be eliminated.
+        // Particles that are too old will be reset to a random position, and be
+        // reset to an age of 0.
         new_position = random_position();
         new_age = 0.0;
     } else if (velocity.x == 0.0 && velocity.y == 0.0) {
-        // Particles in regions without velocity will be eliminated.
+        // Particles in regions without velocity will be reset to a random
+        // position. They are given a random age, because when suddenly zooming
+        // in strongly, many particles may be regenerated at once. If we give
+        // all these particle the same age, they will also all die at the same
+        // time.
         new_position = random_position();
-        new_age = 0.0;
+        new_age = gold_noise(pos, 987.65) * u_max_age;
     } else if (pos.x < -1.0 || pos.x > 1.0 || pos.y < -1.0 || pos.y > 1.0) {
-        // Also generate new positions if our particle leaves clip space.
+        // Also generate new positions and reset age to 0 if our particle leaves
+        // clip space.
         new_position = random_position();
         new_age = 0.0;
     } else {
