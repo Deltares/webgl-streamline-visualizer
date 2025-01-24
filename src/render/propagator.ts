@@ -121,7 +121,7 @@ export class ParticlePropagator {
     bindAttribute(
       gl,
       this.inputBuffer,
-      this.program.getAttributeLocation('a_position'),
+      this.program.getAttributeLocation('a_particle_data'),
       4
     )
     bindTexture(this.program, 'u_velocity_texture', 0, this.velocityTexture)
