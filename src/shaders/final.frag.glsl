@@ -18,16 +18,18 @@ in vec2 v_flipped_tex_coord;
 
 out vec4 color;
 
-float get_speed(vec2 pos) {
-    vec2 velocity_raw = texture(u_velocity_texture, pos).xy;
+#include is_missing_velocity;
 
-    // r = g = 255 means we have no velocity, set it to zero in that case.
-    if (velocity_raw.r == 1.0 && velocity_raw.g == 1.0) {
+float get_speed(vec2 pos) {
+    vec4 velocity_raw = texture(u_velocity_texture, pos);
+
+    // Set missing velocities to zero.
+    if (is_missing_velocity(velocity_raw)) {
         return 0.0;
     }
 
     // Compute velocity in physical units.
-    vec2 velocity = velocity_raw * u_scale + u_offset;
+    vec2 velocity = velocity_raw.rg * u_scale + u_offset;
     return length(velocity);
 }
 
