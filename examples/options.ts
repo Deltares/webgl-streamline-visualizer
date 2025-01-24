@@ -83,6 +83,12 @@ export class VisualiserOptionsControl extends HTMLElement {
       0.1,
       1
     )
+    const growthRateControl = this.createNumericOptionsControl(
+      'Growth rate [pixels/s]',
+      'growthRate',
+      1,
+      5
+    )
 
     this.container.appendChild(styleSelect)
     this.container.appendChild(numParticlesControl)
@@ -92,6 +98,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(maximumDisplacementControl)
     this.container.appendChild(maxAgeControl)
     this.container.appendChild(speedExponentControl)
+    this.container.appendChild(growthRateControl)
   }
 
   private createStreamlineStyleSelectControl(): HTMLSelectElement {

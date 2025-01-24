@@ -30,6 +30,7 @@ export interface StreamlineVisualiserOptions {
   fadeAmountPerSecond: number
   maxDisplacement: number
   maxAge: number
+  growthRate?: number
   speedExponent?: number
   particleColor?: string
   spriteUrl?: URL
@@ -37,6 +38,7 @@ export interface StreamlineVisualiserOptions {
 
 export class StreamlineVisualiser {
   private readonly MAX_NUM_SUBSTEPS = 32
+  private readonly DEFAULT_GROWTH_RATE = 5
 
   private gl: WebGL2RenderingContext
   private width: number
@@ -159,7 +161,8 @@ export class StreamlineVisualiser {
       particleTexture,
       this.widthParticleDataTexture,
       this.heightParticleDataTexture,
-      false
+      false,
+      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
     )
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
@@ -185,7 +188,8 @@ export class StreamlineVisualiser {
         spriteTexture,
         this.widthParticleDataTexture,
         this.heightParticleDataTexture,
-        true
+        true,
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
       )
       this.spriteRenderer.initialise()
     }
@@ -329,9 +333,13 @@ export class StreamlineVisualiser {
     )
     this.particlePropagator.setSpeedCurve(curve)
 
+    const growthRate = this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
     this.particleRenderer.particleSize = this._options.particleSize
+    this.particleRenderer.growthRate = growthRate
+
     if (this.spriteRenderer) {
       this.spriteRenderer.particleSize = this._options.particleSize
+      this.spriteRenderer.growthRate = growthRate
     }
 
     this.finalRenderer.style = this._options.style

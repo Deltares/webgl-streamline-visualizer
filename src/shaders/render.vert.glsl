@@ -16,12 +16,13 @@ uniform lowp int u_is_sprite;
 uniform vec2 u_bbox_scale;
 uniform vec2 u_bbox_offset;
 
+uniform float u_growth_rate;
+
 out vec2 v_tex_coord;
 
 float compute_particle_size(float age) {
-    const float growth_rate = 5.0;
     // Grow up to a maximum of the particle size.
-    float unconstrained_size = age * growth_rate * u_particle_size;
+    float unconstrained_size = age * u_growth_rate * u_particle_size;
     return min(unconstrained_size, u_particle_size);
 }
 
