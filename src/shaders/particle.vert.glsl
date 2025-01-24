@@ -18,6 +18,8 @@ uniform int u_index_eliminate_end;
 in vec4 a_position;
 out vec4 v_position;
 
+#include is_missing_velocity;
+
 // From: https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 float gold_noise(vec2 pos, float seed){
     const float phi = 1.61803398874989484820459;
@@ -39,15 +41,15 @@ vec2 get_clip_space_velocity(vec2 pos) {
         0.5 + 0.5 * pos.x,
         0.5 - 0.5 * pos.y
     );
-    vec2 velocity_raw = texture(u_velocity_texture, pos_texture).xy;
+    vec4 velocity_raw = texture(u_velocity_texture, pos_texture);
 
-    // r = g = 255 means we have no velocity, set it to zero in that case.
-    if (velocity_raw.r == 1.0 && velocity_raw.g == 1.0) {
+    // Set missing velocities to zero.
+    if (is_missing_velocity(velocity_raw)) {
         return vec2(0.0, 0.0);
     }
 
     // Compute velocity in physical coordinates.
-    vec2 velocity = velocity_raw * u_scale_in + u_offset_in;
+    vec2 velocity = velocity_raw.rg * u_scale_in + u_offset_in;
 
     // Apply speed exponent to "compress" the speed---for exponents smaller
     // than 1, higher speeds will be closer together.
