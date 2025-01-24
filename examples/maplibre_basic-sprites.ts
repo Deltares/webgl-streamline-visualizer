@@ -26,11 +26,13 @@ const options: WMSStreamlineLayerOptions = {
     'https://rwsos-dataservices-ont.avi.deltares.nl/durban/FewsWebServices/wms',
   layer: 'swan_hs',
   streamlineStyle: StreamlineStyle.LightParticlesOnMagnitude,
-  numParticles: 1000,
-  particleSize: 16,
-  speedFactor: 0.1,
-  fadeAmountPerSecond: 3,
+  numParticles: 500,
+  particleSize: 24,
+  speedFactor: 0.05,
+  fadeAmountPerSecond: 2,
   speedExponent: 0.7,
+  growthRate: 0.5,
+  maxAge: 2,
   spriteUrl: new URL(spriteUrl, window.location.origin)
 }
 
