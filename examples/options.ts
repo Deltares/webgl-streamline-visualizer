@@ -138,10 +138,10 @@ export class VisualiserOptionsControl extends HTMLElement {
 
     const setNumParticles = (numParticles: number) => {
       if (!this.visualiser) return
-      this.visualiser.setNumParticles(numParticles)
       // Set the number of eliminated particles per second to the number of
       // particles; this works well in almost all cases.
       this.visualiser.updateOptions({ numEliminatePerSecond: numParticles })
+      this.visualiser.setNumParticles(numParticles)
     }
     const [labelElement, inputElement] = this.createNumericInput(
       'Number of particles',

@@ -6,6 +6,51 @@ import {
 } from '../utils/shader-program'
 import { VelocityImage } from '../utils/wms'
 
+export class ParticleBuffers {
+  private gl: WebGL2RenderingContext
+  readonly data: WebGLBuffer
+  readonly age: WebGLBuffer
+
+  constructor(gl: WebGL2RenderingContext, numParticlesAllocate: number) {
+    this.gl = gl
+    this.data = ParticleBuffers.createBuffer(gl, 4, numParticlesAllocate)
+    this.age = ParticleBuffers.createBuffer(gl, 1, numParticlesAllocate)
+  }
+
+  destroy(): void {
+    this.gl.deleteBuffer(this.data)
+    this.gl.deleteBuffer(this.age)
+  }
+
+  initialise(
+    initialCoordinates: Float32Array,
+    initialAges: Float32Array
+  ): void {
+    const gl = this.gl
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.data)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, initialCoordinates)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.age)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, initialAges)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+  }
+
+  private static createBuffer(
+    gl: WebGL2RenderingContext,
+    numFloatsPerParticle: number,
+    numParticlesAllocate: number
+  ): WebGLBuffer {
+    const buffer = gl.createBuffer()
+    const numBytesBuffer = 4 * numFloatsPerParticle * numParticlesAllocate
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, numBytesBuffer, gl.STATIC_DRAW)
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+    return buffer
+  }
+}
+
 export class ParticlePropagator {
   public numEliminatePerSecond: number
 
@@ -15,8 +60,8 @@ export class ParticlePropagator {
   private numParticles: number
   private numParticlesAllocate: number
   private speedCurve: SpeedCurve
-  private inputBuffer: WebGLBuffer | null
-  private outputBuffer: WebGLBuffer | null
+  private inputBuffers: ParticleBuffers | null
+  private outputBuffers: ParticleBuffers | null
   private transformFeedback: WebGLTransformFeedback | null
   private velocityImage: VelocityImage | null
   private velocityTexture: WebGLTexture | null
@@ -42,18 +87,24 @@ export class ParticlePropagator {
     this.velocityTexture = null
     this.speedCurve = speedCurve
 
-    this.inputBuffer = null
-    this.outputBuffer = null
+    this.inputBuffers = null
+    this.outputBuffers = null
     this.transformFeedback = null
   }
 
   get buffer(): WebGLBuffer {
-    if (!this.outputBuffer) {
+    if (!this.outputBuffers) {
       throw new Error(
         'No output buffer defined, particle renderer was not initialised?'
       )
     }
-    return this.outputBuffer
+    return this.outputBuffers.data
+  }
+
+  private get maxAge(): number {
+    // Compute the maximum age of the particles based on the number of particles
+    // eliminated per second. It is specified like this for historical reasons.
+    return this.numParticles / this.numEliminatePerSecond
   }
 
   initialise(): void {
@@ -61,16 +112,13 @@ export class ParticlePropagator {
 
     this.resetBuffers()
     this.transformFeedback = gl.createTransformFeedback()
-
-    // A bit hacky: start by swapping the input and output buffer, since the
-    // buffer will be swapped again in the first call to the render function.
-    this.swapBuffers()
   }
 
   destruct(): void {
     const gl = this.program.gl
-    gl.deleteBuffer(this.inputBuffer)
-    gl.deleteBuffer(this.outputBuffer)
+    if (this.inputBuffers) this.inputBuffers.destroy()
+    if (this.outputBuffers) this.outputBuffers.destroy()
+
     gl.deleteTransformFeedback(this.transformFeedback)
     gl.deleteTexture(this.velocityTexture)
     this.program.destruct()
@@ -91,7 +139,6 @@ export class ParticlePropagator {
     this.numParticlesAllocate = numParticlesAllocate
 
     this.resetBuffers()
-    this.swapBuffers()
   }
 
   setSpeedCurve(speedCurve: SpeedCurve): void {
@@ -102,7 +149,7 @@ export class ParticlePropagator {
     const gl = this.program.gl
     this.program.use()
 
-    if (!this.inputBuffer || !this.outputBuffer) {
+    if (!this.inputBuffers || !this.outputBuffers) {
       throw new Error(
         'Input buffer and/or output buffer is not defined, particle renderer was not initialised?'
       )
@@ -120,9 +167,15 @@ export class ParticlePropagator {
 
     bindAttribute(
       gl,
-      this.inputBuffer,
+      this.inputBuffers.data,
       this.program.getAttributeLocation('a_particle_data'),
       4
+    )
+    bindAttribute(
+      gl,
+      this.inputBuffers.age,
+      this.program.getAttributeLocation('a_particle_age'),
+      1
     )
     bindTexture(this.program, 'u_velocity_texture', 0, this.velocityTexture)
     this.bindUniforms(dt)
@@ -130,7 +183,8 @@ export class ParticlePropagator {
     // Bind transform feedback and buffer so we can write the updated positions
     // of the particles from the vertex shader to the output buffer.
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, this.transformFeedback)
-    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.outputBuffer)
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.outputBuffers.data)
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, this.outputBuffers.age)
 
     // Do not run the fragment shader; we do the particle updates in the vertex
     // shader only.
@@ -146,54 +200,21 @@ export class ParticlePropagator {
   }
 
   private resetBuffers(): void {
+    if (this.inputBuffers) this.inputBuffers.destroy()
+    if (this.outputBuffers) this.outputBuffers.destroy()
+
     const gl = this.program.gl
-    if (this.inputBuffer) gl.deleteBuffer(this.inputBuffer)
-    if (this.outputBuffer) gl.deleteBuffer(this.outputBuffer)
+    this.inputBuffers = new ParticleBuffers(gl, this.numParticlesAllocate)
+    this.outputBuffers = new ParticleBuffers(gl, this.numParticlesAllocate)
 
-    this.inputBuffer = this.createParticleBuffer()
-    this.outputBuffer = this.createParticleBuffer()
+    // Initialise input buffer with random particle positions and ages.
+    const initialCoordinates = this.generateInitialParticleData()
+    const initialAges = this.generateInitialParticleAges()
+    this.inputBuffers.initialise(initialCoordinates, initialAges)
 
-    // Initialise input buffer with random particle positions.
-    this.initialiseInputBuffer()
-  }
-
-  private createParticleBuffer(): WebGLBuffer {
-    const gl = this.program.gl
-    // Create empty output buffer with buffer size of:
-    //   4 (elements per vec4) * 4 (bytes per float) * numParticlesAllocate
-    const numBytesBuffer = 4 * 4 * this.numParticlesAllocate
-    const buffer = gl.createBuffer()
-    if (buffer === null) {
-      throw new Error('Failed to create particle buffer.')
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    gl.bufferData(gl.ARRAY_BUFFER, numBytesBuffer, gl.STATIC_DRAW)
-    gl.bindBuffer(gl.ARRAY_BUFFER, null)
-
-    return buffer
-  }
-
-  private initialiseInputBuffer(): void {
-    const gl = this.program.gl
-
-    const initialCoords = this.createParticles()
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.inputBuffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, initialCoords)
-    gl.bindBuffer(gl.ARRAY_BUFFER, null)
-  }
-
-  private createParticles(): Float32Array {
-    const coords = new Float32Array(this.numParticles * 4)
-    for (let i = 0; i < this.numParticles; i++) {
-      const [x, y] = ParticlePropagator.randomClipCoords()
-      const index = 4 * i
-      coords[index] = x
-      coords[index + 1] = y
-      // Initialise velocity at 0, this will be initialised on the first render.
-      coords[index + 2] = 0
-      coords[index + 3] = 0
-    }
-    return coords
+    // Since we swap the buffers immediately in the update function, swap them
+    // here too.
+    this.swapBuffers()
   }
 
   private bindUniforms(dt: number): void {
@@ -234,26 +255,37 @@ export class ParticlePropagator {
 
     // Select a range of particle indices to eliminate and replace by newly
     // generated positions.
-    const indexEliminate = this.randomParticleIndex()
-    const numEliminate = Math.floor(this.numEliminatePerSecond * dt)
-    gl.uniform1i(
-      this.program.getUniformLocation('u_index_eliminate_start'),
-      indexEliminate
-    )
-    gl.uniform1i(
-      this.program.getUniformLocation('u_index_eliminate_end'),
-      indexEliminate + numEliminate
-    )
+    gl.uniform1f(this.program.getUniformLocation('u_max_age'), this.maxAge)
   }
 
   private swapBuffers(): void {
-    const temp = this.inputBuffer
-    this.inputBuffer = this.outputBuffer
-    this.outputBuffer = temp
+    const temp = this.inputBuffers
+    this.inputBuffers = this.outputBuffers
+    this.outputBuffers = temp
   }
 
-  private randomParticleIndex(): number {
-    return Math.floor(Math.random() * this.numParticles)
+  private generateInitialParticleData(): Float32Array {
+    const data = new Float32Array(this.numParticles * 4)
+    for (let i = 0; i < this.numParticles; i++) {
+      const [x, y] = ParticlePropagator.randomClipCoords()
+      const index = 4 * i
+      data[index] = x
+      data[index + 1] = y
+      // Initialise velocity at almost, but not quite zero. If we initialise at
+      // exactly 0, the shader logic will interpret this as "undefined speed".
+      data[index + 2] = 1e-6
+      data[index + 3] = 1e-6
+    }
+    return data
+  }
+
+  private generateInitialParticleAges(): Float32Array {
+    const ages = new Float32Array(this.numParticles)
+    for (let i = 0; i < this.numParticles; i++) {
+      // Generate random ages such that not all particles die at the same time.
+      ages[i] = Math.random() * this.maxAge
+    }
+    return ages
   }
 
   private static randomClipCoords(): [number, number] {
