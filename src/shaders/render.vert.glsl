@@ -6,6 +6,7 @@ in vec2 a_tex_coord;
 
 uniform int u_width;
 uniform highp sampler2D u_particle_data_texture;
+uniform highp sampler2D u_particle_age_texture;
 
 uniform float u_particle_size;
 uniform float u_aspect_ratio;
@@ -16,6 +17,13 @@ uniform vec2 u_bbox_scale;
 uniform vec2 u_bbox_offset;
 
 out vec2 v_tex_coord;
+
+float compute_particle_size(float age) {
+    const float growth_rate = 5.0;
+    // Grow up to a maximum of the particle size.
+    float unconstrained_size = age * growth_rate * u_particle_size;
+    return min(unconstrained_size, u_particle_size);
+}
 
 void main() {
     // Obtain particle position from texture.
@@ -29,6 +37,12 @@ void main() {
         texture_indices,
         mipmap_level
     );
+    float particle_age = texelFetch(
+        u_particle_age_texture,
+        texture_indices,
+        mipmap_level
+    ).r;
+
     vec2 particle_position = particle_data.xy;
     vec2 particle_velocity = particle_data.zw;
 
@@ -64,7 +78,7 @@ void main() {
     }
 
     // Scale quad and correct for aspect ratio.
-    position *= u_particle_size;
+    position *= compute_particle_size(particle_age);
     position.y *= u_aspect_ratio;
 
     gl_Position = vec4(

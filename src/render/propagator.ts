@@ -92,13 +92,13 @@ export class ParticlePropagator {
     this.transformFeedback = null
   }
 
-  get buffer(): WebGLBuffer {
+  get buffers(): ParticleBuffers {
     if (!this.outputBuffers) {
       throw new Error(
         'No output buffer defined, particle renderer was not initialised?'
       )
     }
-    return this.outputBuffers.data
+    return this.outputBuffers
   }
 
   private get maxAge(): number {

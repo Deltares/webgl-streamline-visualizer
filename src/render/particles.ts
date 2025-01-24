@@ -1,6 +1,7 @@
 import { createRectangleVertexArray } from '../utils/geometry'
 import { ShaderProgram, bindTexture } from '../utils/shader-program'
 import type { BoundingBoxScaling } from './final'
+import type { ParticleBuffers } from './propagator'
 
 export class ParticleRenderer {
   public particleSize: number
@@ -11,6 +12,7 @@ export class ParticleRenderer {
   private numParticles: number
   private particleTexture: WebGLTexture
   private particleDataTexture: WebGLTexture | null
+  private particleAgeTexture: WebGLTexture | null
   private positionBuffer: WebGLBuffer | null
   private texCoordBuffer: WebGLBuffer | null
   private vertexArray: WebGLVertexArrayObject | null
@@ -37,6 +39,7 @@ export class ParticleRenderer {
     this.particleSize = particleSize
     this.particleTexture = particleTexture
     this.particleDataTexture = null
+    this.particleAgeTexture = null
     this.widthParticleDataTexture = widthParticleDataTexture
     this.heightParticleDataTexture = heightParticleDataTexture
 
@@ -66,7 +69,7 @@ export class ParticleRenderer {
     this.positionBuffer = positionBuffer
     this.texCoordBuffer = texCoordBuffer
     this.vertexArray = vertexArray
-    this.particleDataTexture = this.resetParticlePositionTexture()
+    this.resetParticleDataTextures()
   }
 
   destruct(): void {
@@ -75,6 +78,7 @@ export class ParticleRenderer {
     gl.deleteBuffer(this.texCoordBuffer)
     gl.deleteVertexArray(this.vertexArray)
     gl.deleteTexture(this.particleDataTexture)
+    gl.deleteTexture(this.particleAgeTexture)
     gl.deleteTexture(this.particleTexture)
     this.program.destruct()
   }
@@ -92,13 +96,13 @@ export class ParticleRenderer {
     this.numParticles = numParticles
     this.widthParticleDataTexture = widthParticlePositionTexture
     this.heightParticleDataTexture = heightParticlePositionTexture
-    this.particleDataTexture = this.resetParticlePositionTexture()
+    this.resetParticleDataTextures()
   }
 
-  render(particleBuffer: WebGLBuffer, scaling?: BoundingBoxScaling): void {
-    if (!this.particleDataTexture) {
+  render(particleBuffers: ParticleBuffers, scaling?: BoundingBoxScaling): void {
+    if (!this.particleDataTexture || !this.particleAgeTexture) {
       throw new Error(
-        'No particle position texture defined, particle renderer was not initialised?'
+        'No particle data textures defined, particle renderer was not initialised?'
       )
     }
     if (this.isSpriteRenderer && scaling === undefined) {
@@ -123,7 +127,19 @@ export class ParticleRenderer {
     }
 
     gl.bindVertexArray(this.vertexArray)
-    this.updateParticleTextureFromBuffer(particleBuffer)
+
+    // Update particle data (i.e. position and velocity) and particle age data
+    // texture for use in the particle renderer.
+    this.updateParticleDataTextureFromBuffer(
+      particleBuffers.data,
+      this.particleDataTexture,
+      4
+    )
+    this.updateParticleDataTextureFromBuffer(
+      particleBuffers.age,
+      this.particleAgeTexture,
+      1
+    )
 
     bindTexture(this.program, 'u_particle_texture', 0, this.particleTexture)
     bindTexture(
@@ -131,6 +147,12 @@ export class ParticleRenderer {
       'u_particle_data_texture',
       1,
       this.particleDataTexture
+    )
+    bindTexture(
+      this.program,
+      'u_particle_age_texture',
+      2,
+      this.particleAgeTexture
     )
     this.bindUniforms(scaling)
 
@@ -140,12 +162,17 @@ export class ParticleRenderer {
     gl.disable(gl.BLEND)
   }
 
-  private resetParticlePositionTexture(): WebGLTexture {
+  private resetParticleDataTextures(): void {
     const gl = this.program.gl
+    if (this.particleDataTexture) gl.deleteTexture(this.particleDataTexture)
+    if (this.particleAgeTexture) gl.deleteTexture(this.particleAgeTexture)
 
-    if (this.particleDataTexture) {
-      gl.deleteTexture(this.particleDataTexture)
-    }
+    this.particleDataTexture = this.createParticleDataTexture(4)
+    this.particleAgeTexture = this.createParticleDataTexture(1)
+  }
+
+  private createParticleDataTexture(numComponents: 1 | 4): WebGLTexture {
+    const gl = this.program.gl
 
     const texture = gl.createTexture()
     if (texture === null) {
@@ -158,7 +185,7 @@ export class ParticleRenderer {
     gl.texStorage2D(
       gl.TEXTURE_2D,
       1,
-      gl.RGBA32F,
+      numComponents === 1 ? gl.R32F : gl.RGBA32F,
       this.widthParticleDataTexture,
       this.heightParticleDataTexture
     )
@@ -173,7 +200,11 @@ export class ParticleRenderer {
     return texture
   }
 
-  private updateParticleTextureFromBuffer(particleBuffer: WebGLBuffer): void {
+  private updateParticleDataTextureFromBuffer(
+    particleBuffer: WebGLBuffer,
+    dataTexture: WebGLTexture,
+    numComponents: 1 | 4
+  ): void {
     if (!this.particleDataTexture) {
       throw new Error(
         'No particle position texture defined, particle renderer was not initialised?'
@@ -181,7 +212,7 @@ export class ParticleRenderer {
     }
     const gl = this.program.gl
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, particleBuffer)
-    gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture)
+    gl.bindTexture(gl.TEXTURE_2D, dataTexture)
 
     gl.texSubImage2D(
       gl.TEXTURE_2D,
@@ -190,7 +221,7 @@ export class ParticleRenderer {
       0, // y-offset
       this.widthParticleDataTexture,
       this.heightParticleDataTexture,
-      gl.RGBA,
+      numComponents === 1 ? gl.RED : gl.RGBA,
       gl.FLOAT,
       0 // offset into the pixel unpack buffer
     )
