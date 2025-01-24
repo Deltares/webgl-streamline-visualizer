@@ -84,7 +84,7 @@ export class VisualiserOptionsControl extends HTMLElement {
       1
     )
     const growthRateControl = this.createNumericOptionsControl(
-      'Growth rate [pixels/s]',
+      'Growth rate [particle sizes/s]',
       'growthRate',
       1,
       5
