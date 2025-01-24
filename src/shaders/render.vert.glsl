@@ -30,6 +30,15 @@ void main() {
         mipmap_level
     );
     vec2 particle_position = particle_data.xy;
+    vec2 particle_velocity = particle_data.zw;
+
+    if (particle_velocity.x == 0.0 && particle_velocity.y == 0.0) {
+        // If the velocity is exactly zero, we are in a position where no
+        // velocity has been defined. Return the same position for all vertices,
+        // resulting in degenerate triangles that will not be rendered.
+        gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
 
     vec2 position = a_position;
     if (u_is_sprite == 1) {
@@ -46,7 +55,7 @@ void main() {
         //     [ v u ]
         //     [-u v ]
         //
-        vec2 direction = normalize(particle_data.zw);
+        vec2 direction = normalize(particle_velocity);
         mat2 transformation = mat2(
             vec2(-direction.y, direction.x),
             direction
