@@ -15,8 +15,8 @@ uniform float u_dt;
 uniform int u_index_eliminate_start;
 uniform int u_index_eliminate_end;
 
-in vec4 a_position;
-out vec4 v_position;
+in vec4 a_particle_data;
+out vec4 v_new_particle_data;
 
 #include is_missing_velocity;
 
@@ -27,7 +27,7 @@ float gold_noise(vec2 pos, float seed){
 }
 
 vec2 random_position() {
-    vec2 pos = a_position.xy;
+    vec2 pos = a_particle_data.xy;
     float x = gold_noise(pos, -123.456) * 2.0 - 1.0;
     float y = gold_noise(pos, 789.012) * 2.0 - 1.0;
     return vec2(x, y);
@@ -69,8 +69,8 @@ vec2 get_clip_space_velocity(vec2 pos) {
 }
 
 void main() {
-    vec2 pos = a_position.xy;
-    vec2 velocity = a_position.zw;
+    vec2 pos = a_particle_data.xy;
+    vec2 velocity = a_particle_data.zw;
 
     vec2 new_position;
     if (gl_VertexID >= u_index_eliminate_start && gl_VertexID < u_index_eliminate_end) {
@@ -84,5 +84,5 @@ void main() {
     }
 
     vec2 new_velocity = get_clip_space_velocity(new_position);
-    v_position = vec4(new_position, new_velocity);
+    v_new_particle_data = vec4(new_position, new_velocity);
 }

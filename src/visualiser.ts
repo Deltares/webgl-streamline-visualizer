@@ -93,17 +93,15 @@ export class StreamlineVisualiser {
   // the size of each dimensions of a texture, so to support an acceptable
   // number of particles, we need to store them in a 2D texture, instead of
   // a simple 1D texture.
-  private get widthParticlePositionTexture(): number {
+  private get widthParticleDataTexture(): number {
     return Math.ceil(Math.sqrt(this._numParticles))
   }
-  private get heightParticlePositionTexture(): number {
-    return this.widthParticlePositionTexture
+  private get heightParticleDataTexture(): number {
+    return this.widthParticleDataTexture
   }
 
   private get numParticlesAllocate(): number {
-    return (
-      this.widthParticlePositionTexture * this.heightParticlePositionTexture
-    )
+    return this.widthParticleDataTexture * this.heightParticleDataTexture
   }
 
   get isInitialised(): boolean {
@@ -159,8 +157,8 @@ export class StreamlineVisualiser {
       this._numParticles,
       this._options.particleSize,
       particleTexture,
-      this.widthParticlePositionTexture,
-      this.heightParticlePositionTexture,
+      this.widthParticleDataTexture,
+      this.heightParticleDataTexture,
       false
     )
     this.finalRenderer = new FinalRenderer(
@@ -185,8 +183,8 @@ export class StreamlineVisualiser {
         this._numParticles,
         this._options.particleSize,
         spriteTexture,
-        this.widthParticlePositionTexture,
-        this.heightParticlePositionTexture,
+        this.widthParticleDataTexture,
+        this.heightParticleDataTexture,
         true
       )
       this.spriteRenderer.initialise()
@@ -268,14 +266,14 @@ export class StreamlineVisualiser {
     )
     this.particleRenderer.setNumParticles(
       this._numParticles,
-      this.widthParticlePositionTexture,
-      this.heightParticlePositionTexture
+      this.widthParticleDataTexture,
+      this.heightParticleDataTexture
     )
     if (this.spriteRenderer) {
       this.spriteRenderer.setNumParticles(
         this._numParticles,
-        this.widthParticlePositionTexture,
-        this.heightParticlePositionTexture
+        this.widthParticleDataTexture,
+        this.heightParticleDataTexture
       )
     }
   }
@@ -448,7 +446,7 @@ export class StreamlineVisualiser {
       this.gl,
       particleVertexShader,
       placeholderFragmentShader,
-      ['v_position']
+      ['v_new_particle_data']
     )
     const programRenderParticles = new ShaderProgram(
       this.gl,
