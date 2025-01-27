@@ -363,6 +363,15 @@ export class StreamlineVisualiser {
       )
     }
 
+    // Large time steps (which may occur e.g. when the window loses focus) will
+    // result in undesirable synchronisation of the particle ages: all particles
+    // will die and be reborn simultaneously because they suddenly all exceed
+    // their maximum age. If we have a time step larger than 10% of the maximum
+    // age, regenerate particles.
+    if (dt > 0.1 * this._options.maxAge) {
+      this.particlePropagator.resetAges()
+    }
+
     // Check whether we need to do any substepping.
     const needSubstepping = dt > this.dtMin
     // Never do more than a certain number of substeps.

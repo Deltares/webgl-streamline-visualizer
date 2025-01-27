@@ -37,6 +37,13 @@ export class ParticleBuffers {
     gl.bindBuffer(gl.ARRAY_BUFFER, null)
   }
 
+  resetAges(newAges: Float32Array): void {
+    const gl = this.gl
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.age)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, newAges)
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+  }
+
   private static createBuffer(
     gl: WebGL2RenderingContext,
     numFloatsPerParticle: number,
@@ -143,6 +150,13 @@ export class ParticlePropagator {
 
   setSpeedCurve(speedCurve: SpeedCurve): void {
     this.speedCurve = speedCurve
+  }
+
+  resetAges(): void {
+    const initialAges = this.generateInitialParticleAges()
+    // Set the new ages on the output buffer, since we swap the buffers at the
+    // start of rendering.
+    this.outputBuffers?.resetAges(initialAges)
   }
 
   update(dt: number): void {
