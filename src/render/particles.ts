@@ -5,6 +5,7 @@ import type { ParticleBuffers } from './propagator'
 
 export class ParticleRenderer {
   public particleSize: number
+  public maxAge: number
   public growthRate: number
 
   private program: ShaderProgram
@@ -31,6 +32,7 @@ export class ParticleRenderer {
     widthParticleDataTexture: number,
     heightParticleDataTexture: number,
     isSpriteRenderer: boolean,
+    maxAge: number,
     growthRate: number
   ) {
     this.program = program
@@ -44,6 +46,8 @@ export class ParticleRenderer {
     this.particleAgeTexture = null
     this.widthParticleDataTexture = widthParticleDataTexture
     this.heightParticleDataTexture = heightParticleDataTexture
+
+    this.maxAge = maxAge
     this.growthRate = growthRate
 
     this.positionBuffer = null
@@ -270,6 +274,7 @@ export class ParticleRenderer {
       scaling?.offsetY ?? 0.0
     )
 
+    gl.uniform1f(this.program.getUniformLocation('u_max_age'), this.maxAge)
     gl.uniform1f(
       this.program.getUniformLocation('u_growth_rate'),
       this.growthRate

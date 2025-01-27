@@ -162,6 +162,7 @@ export class StreamlineVisualiser {
       this.widthParticleDataTexture,
       this.heightParticleDataTexture,
       false,
+      this._options.maxAge,
       this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
     )
     this.finalRenderer = new FinalRenderer(
@@ -189,6 +190,7 @@ export class StreamlineVisualiser {
         this.widthParticleDataTexture,
         this.heightParticleDataTexture,
         true,
+        this._options.maxAge,
         this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
       )
       this.spriteRenderer.initialise()
