@@ -16,14 +16,29 @@ uniform lowp int u_is_sprite;
 uniform vec2 u_bbox_scale;
 uniform vec2 u_bbox_offset;
 
+uniform float u_max_age;
 uniform float u_growth_rate;
 
 out vec2 v_tex_coord;
 
 float compute_particle_size(float age) {
-    // Grow up to a maximum of the particle size.
-    float unconstrained_size = age * u_growth_rate * u_particle_size;
-    return min(unconstrained_size, u_particle_size);
+    const float shrink_time = 0.1;
+    // Grow up to a maximum of the particle size, until the last 100 ms, in
+    // which we shrink down to 0 again to make vanishing particles seem more
+    // natural.
+    float shrink_start_age = u_max_age - shrink_time;
+    if (age > shrink_start_age) {
+        float start_size = min(
+            shrink_start_age * u_growth_rate * u_particle_size,
+            u_particle_size
+        );
+        float shrink_rate = start_size / shrink_time;
+        float shrink_factor = 1.0 - (age - shrink_start_age) / shrink_time;
+        return start_size * shrink_factor;
+    } else {
+        float unconstrained_size = age * u_growth_rate * u_particle_size;
+        return min(unconstrained_size, u_particle_size);
+    }
 }
 
 void main() {
