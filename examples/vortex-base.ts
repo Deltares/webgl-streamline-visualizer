@@ -111,8 +111,7 @@ export async function initialiseVisualiser(
   // Render a new frame every frame, taking into account the time between
   // subsequent frames.
   let previousFrameTime: number | null = null
-  const renderFrame = () => {
-    const now = performance.now()
+  const renderFrame = (now: number) => {
     const dt = previousFrameTime ? (now - previousFrameTime) / 1000 : 1 / 60
     previousFrameTime = now
 
@@ -120,7 +119,7 @@ export async function initialiseVisualiser(
 
     window.requestAnimationFrame(renderFrame)
   }
-  renderFrame()
+  window.requestAnimationFrame(renderFrame)
 
   return visualiser
 }
