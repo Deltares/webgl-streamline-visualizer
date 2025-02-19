@@ -328,6 +328,10 @@ export class StreamlineVisualiser {
     }
 
     this.particlePropagator.setMaxAge(this._options.maxAge)
+    this.particleRenderer.setMaxAge(this._options.maxAge)
+    if (this.spriteRenderer) {
+      this.spriteRenderer.setMaxAge(this._options.maxAge)
+    }
 
     const curve = StreamlineVisualiser.computeSpeedCurve(
       this.colorMap,

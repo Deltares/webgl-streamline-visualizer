@@ -106,6 +106,10 @@ export class ParticleRenderer {
     this.resetParticleDataTextures()
   }
 
+  setMaxAge(maxAge: number): void {
+    this.maxAge = maxAge
+  }
+
   render(particleBuffers: ParticleBuffers, scaling?: BoundingBoxScaling): void {
     if (!this.particleDataTexture || !this.particleAgeTexture) {
       throw new Error(
