@@ -12,7 +12,7 @@ const options: StreamlineVisualiserOptions = {
   fadeAmountPerSecond: 3,
   maxDisplacement: 1,
   maxAge: 2,
-  growthRate: 0.5,
+  growthRate: 1,
   spriteUrl: new URL(spriteUrl, window.location.origin)
 }
 
