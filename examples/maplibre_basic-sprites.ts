@@ -31,7 +31,7 @@ const options: WMSStreamlineLayerOptions = {
   speedFactor: 0.05,
   fadeAmountPerSecond: 2,
   speedExponent: 0.7,
-  growthRate: 0.5,
+  growthRate: 1,
   maxAge: 2,
   spriteUrl: new URL(spriteUrl, window.location.origin)
 }
