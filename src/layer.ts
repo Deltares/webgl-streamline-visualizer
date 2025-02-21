@@ -1,8 +1,8 @@
 import { debounce } from 'lodash-es'
 import {
   type CustomLayerInterface,
-  type LngLat,
-  type LngLatBounds,
+  LngLat,
+  LngLatBounds,
   type Map,
   MercatorCoordinate
 } from 'maplibre-gl'
@@ -31,7 +31,7 @@ export interface WMSStreamlineLayerOptions {
   particleColor?: string
 }
 
-function mapBoundsToEpsg3857BoundingBox(
+function convertMapBoundsToEpsg3857BoundingBox(
   bounds: LngLatBounds
 ): [number, number, number, number] {
   // Converts weird normalised EPSG:3857 to actual EPSG:3857.
@@ -182,9 +182,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       return
     }
 
-    const [xSWCur, ySWCur, xNECur, yNECur] = mapBoundsToEpsg3857BoundingBox(
-      this.map.getBounds()
-    )
+    const [xSWCur, ySWCur, xNECur, yNECur] =
+      convertMapBoundsToEpsg3857BoundingBox(this.map.getBounds())
     const [xSWWMS, ySWWMS, xNEWMS, yNEWMS] = this.boundingBoxWMS
 
     // Compute offset and scale of the new bounding box compared to the old one.
@@ -441,13 +440,28 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     // layer, since the user may have moved the map while this fetch is
     // happening; this would cause the newly fetched WMS image to be placed at
     // the wrong coordinates.
-    const boundingBox = mapBoundsToEpsg3857BoundingBox(this.map.getBounds())
+    // The FEWS Web Mapping Service cannot handle bounding boxes larger than a
+    // single earth, so we restrict ourselves to just the one earth. We also
+    // need to reduce the width of the requested image by the appropriate
+    // amount, as this size is not respected by FEWS WMS if the aspect ratio is
+    // not OK.
+    let factorWidth = 1
+    let bounds = this.map.getBounds()
+    const range = bounds.getEast() - bounds.getWest()
+    if (range > 360) {
+      factorWidth = 360 / range
+      bounds = new LngLatBounds(
+        new LngLat(0, bounds.getSouth()),
+        new LngLat(360, bounds.getNorth())
+      )
+    }
+    const boundingBox = convertMapBoundsToEpsg3857BoundingBox(bounds)
 
     const downsampleDimension = (length: number) => {
       const divisor = this.options.downsampleFactorWMS ?? 1
       return Math.round(length / divisor)
     }
-    const widthWMS = downsampleDimension(width)
+    const widthWMS = downsampleDimension(factorWidth * width)
     const heightWMS = downsampleDimension(height)
 
     try {
