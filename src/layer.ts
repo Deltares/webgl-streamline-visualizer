@@ -291,9 +291,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     // the map is resized. Make sure we do not add the listener if we have
     // already aborted any requests because the layer is being removed.
     if (this.signal.aborted) return
-    this.map
-      .on('resize', this.onResizeStart)
-      .on('moveend', this.debouncedOnMapMoveEnd)
+    this.map.on('resize', this.onResizeStart)
+    this.map.on('moveend', this.debouncedOnMapMoveEnd)
 
     this.isInitialised = true
 
