@@ -318,8 +318,11 @@ export class StreamlineVisualiser {
     }
     this._options = { ...this._options, ...options }
 
-    // TODO: create sprite texture and sprite renderer if specified. This will
-    //       be a breaking change as this method will become async.
+    if (this.spriteRenderer === null && options.spriteUrl !== undefined) {
+      throw new Error(
+        'Cannot set sprite URL for a visualiser that was not initialised to render sprites.'
+      )
+    }
 
     if (this.velocityImage) {
       // Use the old minimum time step to compute the new one based on the change
