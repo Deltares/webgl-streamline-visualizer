@@ -4,6 +4,8 @@ import * as GeoTIFF from 'geotiff'
 import { Color, Colormap } from './colormap'
 import { createTexture } from './textures'
 
+export type TransformRequestFunction = (request: Request) => Promise<Request>
+
 export class VelocityImage {
   constructor(
     private data: Uint8Array | Uint8ClampedArray,
@@ -47,7 +49,8 @@ export async function fetchWMSColormap(
   baseUrl: string,
   layer: string,
   colorScaleRange?: [number, number],
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  transformRequest?: TransformRequestFunction
 ): Promise<Colormap> {
   const url = new URL(baseUrl)
   url.searchParams.append('request', 'GetLegendGraphic')
@@ -58,7 +61,9 @@ export async function fetchWMSColormap(
     url.searchParams.append('colorScaleRange', `${colorScaleRange.join(',')}`)
   }
 
-  const response = await fetch(url, { signal })
+  const request = new Request(url)
+  const transformedRequest = (await transformRequest?.(request)) ?? request
+  const response = await fetch(new Request(transformedRequest, { signal }))
   const data = (await response.json()) as {
     legend: { lowerValue: number; color: string }[]
   }
@@ -72,7 +77,8 @@ export async function fetchWMSColormap(
 export async function fetchWMSAvailableTimesAndElevations(
   baseUrl: string,
   layerName: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  transformRequest?: TransformRequestFunction
 ): Promise<{ times: string[]; elevationBounds: [number, number] | null }> {
   const url = new URL(baseUrl)
   url.searchParams.append('request', 'GetCapabilities')
@@ -80,7 +86,9 @@ export async function fetchWMSAvailableTimesAndElevations(
   url.searchParams.append('version', '1.3')
   url.searchParams.append('layers', layerName)
 
-  const response = await fetch(url, { signal })
+  const request = new Request(url)
+  const transformedRequest = (await transformRequest?.(request)) ?? request
+  const response = await fetch(new Request(transformedRequest, { signal }))
   const capabilities = (await response.json()) as GetCapabilitiesResponse
 
   const layer = capabilities.layers?.[0]
@@ -123,7 +131,8 @@ export async function fetchWMSVelocityField(
   style?: string,
   useDisplayUnits?: boolean,
   elevation?: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  transformRequest?: TransformRequestFunction
 ): Promise<VelocityImage> {
   const url = new URL(baseUrl)
   url.searchParams.append('request', 'GetMap')
@@ -149,7 +158,9 @@ export async function fetchWMSVelocityField(
     url.searchParams.append('elevation', `${elevation}`)
   }
 
-  const response = await fetch(url, { signal })
+  const request = new Request(url)
+  const transformedRequest = (await transformRequest?.(request)) ?? request
+  const response = await fetch(new Request(transformedRequest, { signal }))
   const arrayBuffer = await response.arrayBuffer()
 
   const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer, signal)
