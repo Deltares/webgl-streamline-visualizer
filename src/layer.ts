@@ -15,6 +15,7 @@ import {
   fetchWMSColormap,
   fetchWMSVelocityField
 } from '.'
+import type { TransformRequestFunction } from '@/utils/wms'
 
 export interface WMSStreamlineLayerOptions {
   baseUrl: string
@@ -29,6 +30,7 @@ export interface WMSStreamlineLayerOptions {
   downsampleFactorWMS?: number
   speedExponent?: number
   particleColor?: string
+  transformRequest?: TransformRequestFunction
 }
 
 function convertMapBoundsToEpsg3857BoundingBox(
@@ -265,14 +267,16 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       this.options.baseUrl,
       this.options.layer,
       colorScaleRange,
-      this.signal
+      this.signal,
+      this.options.transformRequest
     )
 
     // Fetch available WMS times and elevations.
     const response = await fetchWMSAvailableTimesAndElevations(
       this.options.baseUrl,
       this.options.layer,
-      this.signal
+      this.signal,
+      this.options.transformRequest
     )
 
     this.times = response.times
@@ -368,7 +372,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       this.options.baseUrl,
       this.options.layer,
       colorScaleRange ?? undefined,
-      this.signal
+      this.signal,
+      this.options.transformRequest
     )
     this._visualiser?.setColorMap(colormap)
 
@@ -474,7 +479,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
         this.options.style,
         this.options.useDisplayUnits,
         this.elevation ?? undefined,
-        this.signal
+        this.signal,
+        this.options.transformRequest
       )
       this._visualiser?.setVelocityImage(velocityImage, doResetParticles)
     } catch (error) {
