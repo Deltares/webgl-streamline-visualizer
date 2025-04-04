@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     viteGlslPlugin({
       include: ['**/*.frag.glsl', '**/*.vert.glsl'],
-      compress: true
+      minify: true
     })
   ],
   build:
