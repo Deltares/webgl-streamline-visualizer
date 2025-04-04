@@ -71,11 +71,23 @@ export class VisualiserOptionsControl extends HTMLElement {
       'maxDisplacement',
       1
     )
+    const maxAgeControl = this.createNumericOptionsControl(
+      'Maximum particle age [s]',
+      'maxAge',
+      0.1,
+      1
+    )
     const speedExponentControl = this.createNumericOptionsControl(
       'Speed exponent',
       'speedExponent',
       0.1,
       1
+    )
+    const growthRateControl = this.createNumericOptionsControl(
+      'Growth rate [particle sizes/s]',
+      'growthRate',
+      1,
+      5
     )
 
     this.container.appendChild(styleSelect)
@@ -84,7 +96,9 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(speedFactorControl)
     this.container.appendChild(fadeAmountControl)
     this.container.appendChild(maximumDisplacementControl)
+    this.container.appendChild(maxAgeControl)
     this.container.appendChild(speedExponentControl)
+    this.container.appendChild(growthRateControl)
   }
 
   private createStreamlineStyleSelectControl(): HTMLSelectElement {
@@ -139,9 +153,6 @@ export class VisualiserOptionsControl extends HTMLElement {
     const setNumParticles = (numParticles: number) => {
       if (!this.visualiser) return
       this.visualiser.setNumParticles(numParticles)
-      // Set the number of eliminated particles per second to the number of
-      // particles; this works well in almost all cases.
-      this.visualiser.updateOptions({ numEliminatePerSecond: numParticles })
     }
     const [labelElement, inputElement] = this.createNumericInput(
       'Number of particles',
@@ -159,7 +170,10 @@ export class VisualiserOptionsControl extends HTMLElement {
 
   private createNumericOptionsControl(
     label: string,
-    key: keyof Omit<StreamlineVisualiserOptions, 'style' | 'particleColor'>,
+    key: keyof Omit<
+      StreamlineVisualiserOptions,
+      'style' | 'particleColor' | 'spriteUrl'
+    >,
     step: number,
     defaultValue: number = 0
   ): HTMLLabelElement {

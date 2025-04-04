@@ -20,6 +20,10 @@ export class TextureRenderer {
   }
 
   initialise(): void {
+    // We do not flip the vertical texture coordinate because we are only
+    // rendering textures originating from a framebuffer, which does _not_ have
+    // a flipped y-axis compared to clip space.
+    const doFlipV = false
     const [positionBuffer, texCoordBuffer, vertexArray] =
       createRectangleVertexArray(
         this.program,
@@ -27,6 +31,7 @@ export class TextureRenderer {
         1.0,
         -1.0,
         1.0,
+        doFlipV,
         'a_position',
         'a_tex_coord'
       )
