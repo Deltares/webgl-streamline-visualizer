@@ -25,17 +25,20 @@ import { FragmentShader, VertexShader } from './utils/shader'
 
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
-  numEliminatePerSecond: number
   particleSize: number
   speedFactor: number
   fadeAmountPerSecond: number
   maxDisplacement: number
+  maxAge: number
+  growthRate?: number
   speedExponent?: number
   particleColor?: string
+  spriteUrl?: URL
 }
 
 export class StreamlineVisualiser {
   private readonly MAX_NUM_SUBSTEPS = 32
+  private readonly DEFAULT_GROWTH_RATE = 5
 
   private gl: WebGL2RenderingContext
   private width: number
@@ -44,10 +47,13 @@ export class StreamlineVisualiser {
   private _numParticles: number
   private particleTextureSize: number
   private _options: StreamlineVisualiserOptions
+
   private textureRenderer: TextureRenderer | null
   private particlePropagator: ParticlePropagator | null
   private particleRenderer: ParticleRenderer | null
   private finalRenderer: FinalRenderer | null
+  private spriteRenderer: ParticleRenderer | null
+
   private scaling: BoundingBoxScaling
   private previousParticleTexture: WebGLTexture | null
   private currentParticleTexture: WebGLTexture | null
@@ -70,10 +76,13 @@ export class StreamlineVisualiser {
     this._numParticles = numParticles
     this.particleTextureSize = particleTextureSize
     this._options = { ...options }
+
     this.textureRenderer = null
     this.particlePropagator = null
     this.particleRenderer = null
     this.finalRenderer = null
+    this.spriteRenderer = null
+
     this.scaling = { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 }
     this.previousParticleTexture = null
     this.currentParticleTexture = null
@@ -86,17 +95,15 @@ export class StreamlineVisualiser {
   // the size of each dimensions of a texture, so to support an acceptable
   // number of particles, we need to store them in a 2D texture, instead of
   // a simple 1D texture.
-  private get widthParticlePositionTexture(): number {
+  private get widthParticleDataTexture(): number {
     return Math.ceil(Math.sqrt(this._numParticles))
   }
-  private get heightParticlePositionTexture(): number {
-    return this.widthParticlePositionTexture
+  private get heightParticleDataTexture(): number {
+    return this.widthParticleDataTexture
   }
 
   private get numParticlesAllocate(): number {
-    return (
-      this.widthParticlePositionTexture * this.heightParticlePositionTexture
-    )
+    return this.widthParticleDataTexture * this.heightParticleDataTexture
   }
 
   get isInitialised(): boolean {
@@ -142,7 +149,7 @@ export class StreamlineVisualiser {
       this.height,
       this._numParticles,
       this.numParticlesAllocate,
-      this._options.numEliminatePerSecond,
+      this._options.maxAge,
       speedCurve
     )
     this.particleRenderer = new ParticleRenderer(
@@ -152,8 +159,11 @@ export class StreamlineVisualiser {
       this._numParticles,
       this._options.particleSize,
       particleTexture,
-      this.widthParticlePositionTexture,
-      this.heightParticlePositionTexture
+      this.widthParticleDataTexture,
+      this.heightParticleDataTexture,
+      false,
+      this._options.maxAge,
+      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
     )
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
@@ -166,6 +176,28 @@ export class StreamlineVisualiser {
     this.particleRenderer.initialise()
     this.finalRenderer.initialise()
 
+    // If we have a sprite URL, also create a sprite renderer to draw it over
+    // the particle trail at the end of rendering every frame.
+    if (this.options.spriteUrl) {
+      const spriteTexture = await this.createSpriteTexture()
+      this.spriteRenderer = new ParticleRenderer(
+        programRenderParticles,
+        this.width,
+        this.height,
+        this._numParticles,
+        this._options.particleSize,
+        spriteTexture,
+        this.widthParticleDataTexture,
+        this.heightParticleDataTexture,
+        true,
+        this._options.maxAge,
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+      )
+      this.spriteRenderer.initialise()
+    }
+
+    // Create textures to render the particle trails into, and associate them
+    // with the texture renderer's frame buffer.
     this.previousParticleTexture = this.createZeroTexture()
     this.currentParticleTexture = this.createZeroTexture()
     this.textureRenderer.resetParticleTextures(
@@ -210,8 +242,11 @@ export class StreamlineVisualiser {
     this.previousParticleTexture = this.createZeroTexture()
     this.currentParticleTexture = this.createZeroTexture()
 
-    this.particlePropagator?.setDimensions(width, height)
-    this.particleRenderer?.setDimensions(width, height)
+    this.particlePropagator.setDimensions(width, height)
+    this.particleRenderer.setDimensions(width, height)
+    if (this.spriteRenderer) {
+      this.spriteRenderer.setDimensions(width, height)
+    }
 
     if (this.velocityImage) {
       // We need to recompute the time step because our pixel size has changed.
@@ -231,15 +266,22 @@ export class StreamlineVisualiser {
 
     this._numParticles = numParticles
 
-    this.particlePropagator?.setNumParticles(
+    this.particlePropagator.setNumParticles(
       this._numParticles,
       this.numParticlesAllocate
     )
-    this.particleRenderer?.setNumParticles(
+    this.particleRenderer.setNumParticles(
       this._numParticles,
-      this.widthParticlePositionTexture,
-      this.heightParticlePositionTexture
+      this.widthParticleDataTexture,
+      this.heightParticleDataTexture
     )
+    if (this.spriteRenderer) {
+      this.spriteRenderer.setNumParticles(
+        this._numParticles,
+        this.widthParticleDataTexture,
+        this.heightParticleDataTexture
+      )
+    }
   }
 
   setColorMap(colorMap: Colormap): void {
@@ -276,14 +318,23 @@ export class StreamlineVisualiser {
     }
     this._options = { ...this._options, ...options }
 
+    if (this.spriteRenderer === null && options.spriteUrl !== undefined) {
+      throw new Error(
+        'Cannot set sprite URL for a visualiser that was not initialised to render sprites.'
+      )
+    }
+
     if (this.velocityImage) {
       // Use the old minimum time step to compute the new one based on the change
       // in maximum displacement.
       this.dtMin = this.computeMinimumTimeStep()
     }
 
-    this.particlePropagator.numEliminatePerSecond =
-      this._options.numEliminatePerSecond
+    this.particlePropagator.setMaxAge(this._options.maxAge)
+    this.particleRenderer.setMaxAge(this._options.maxAge)
+    if (this.spriteRenderer) {
+      this.spriteRenderer.setMaxAge(this._options.maxAge)
+    }
 
     const curve = StreamlineVisualiser.computeSpeedCurve(
       this.colorMap,
@@ -291,7 +342,14 @@ export class StreamlineVisualiser {
     )
     this.particlePropagator.setSpeedCurve(curve)
 
+    const growthRate = this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
     this.particleRenderer.particleSize = this._options.particleSize
+    this.particleRenderer.growthRate = growthRate
+
+    if (this.spriteRenderer) {
+      this.spriteRenderer.particleSize = this._options.particleSize
+      this.spriteRenderer.growthRate = growthRate
+    }
 
     this.finalRenderer.style = this._options.style
   }
@@ -310,6 +368,15 @@ export class StreamlineVisualiser {
       throw new Error(
         'Visualiser was not initialised before attempting to render frame.'
       )
+    }
+
+    // Large time steps (which may occur e.g. when the window loses focus) will
+    // result in undesirable synchronisation of the particle ages: all particles
+    // will die and be reborn simultaneously because they suddenly all exceed
+    // their maximum age. If we have a time step larger than 10% of the maximum
+    // age, regenerate particles.
+    if (dt > 0.1 * this._options.maxAge) {
+      this.particlePropagator.resetAges()
     }
 
     // Check whether we need to do any substepping.
@@ -341,16 +408,23 @@ export class StreamlineVisualiser {
       // Use the updated particle position to render sprites at those locations.
       // These particles are rendered on top of the previous particle frame to
       // produce the fading "comet trails".
-      this.particleRenderer.render(this.particlePropagator.buffer)
+      this.particleRenderer.render(this.particlePropagator.buffers)
 
       // Do not swap at the last time step as we need the latest particle
       // texture for the final render.
-      if (i < numSubSteps - 1) this.swapParticleTextures()
+      if (i < numSubSteps - 1) {
+        this.swapParticleTextures()
+      }
     }
 
     // Finally, render the velocity magnitude with the particles (and trails)
     // blended with it.
     this.finalRenderer.render(this.currentParticleTexture, this.scaling)
+
+    if (this.spriteRenderer) {
+      // Render the sprite in the final position, on top of everything.
+      this.spriteRenderer.render(this.particlePropagator.buffers, this.scaling)
+    }
 
     // Swap previous and current particle texture.
     this.swapParticleTextures()
@@ -397,7 +471,7 @@ export class StreamlineVisualiser {
       this.gl,
       particleVertexShader,
       placeholderFragmentShader,
-      ['v_position']
+      ['v_new_particle_data', 'v_new_particle_age']
     )
     const programRenderParticles = new ShaderProgram(
       this.gl,
@@ -470,20 +544,39 @@ export class StreamlineVisualiser {
 
     const x = radius
     const y = radius
-    const gradient = context.createRadialGradient(x, y, 0, x, y, radius)
-
     const particleColor = this._options.particleColor ?? 'black'
-    gradient.addColorStop(0, particleColor)
-    gradient.addColorStop(0.8, particleColor)
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
 
     context.beginPath()
     context.arc(x, y, radius, 0, 2 * Math.PI, false)
-    context.fillStyle = gradient
+    context.fillStyle = particleColor
     context.fill()
 
     const data = context.getImageData(0, 0, width, height).data
     return createTexture(this.gl, this.gl.LINEAR, data, width, height)
+  }
+
+  private async createSpriteTexture(): Promise<WebGLTexture> {
+    if (!this.options.spriteUrl) {
+      throw new Error(
+        'Cannot create sprite texture if no sprite URL has been specified.'
+      )
+    }
+
+    const sprite = new Image()
+    sprite.src = this.options.spriteUrl.toString()
+    await sprite.decode()
+
+    const width = this.particleTextureSize
+    const height = this.particleTextureSize
+
+    // Note: sprite images will always be squeezed into a square.
+    const bitmap = await createImageBitmap(sprite, {
+      resizeWidth: width,
+      resizeHeight: height,
+      resizeQuality: 'high'
+    })
+
+    return createTexture(this.gl, this.gl.LINEAR, bitmap, width, height)
   }
 
   private createZeroTexture(): WebGLTexture {

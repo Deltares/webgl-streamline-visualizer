@@ -14,25 +14,30 @@ uniform vec2 u_scale;
 uniform vec2 u_offset;
 
 in vec2 v_tex_coord;
+in vec2 v_flipped_tex_coord;
 
 out vec4 color;
 
-float get_speed(vec2 pos) {
-    vec2 velocity_raw = texture(u_velocity_texture, pos).xy;
+#include is_missing_velocity;
 
-    // r = g = 255 means we have no velocity, set it to zero in that case.
-    if (velocity_raw.r == 1.0 && velocity_raw.g == 1.0) {
+float get_speed(vec2 pos) {
+    vec4 velocity_raw = texture(u_velocity_texture, pos);
+
+    // Set missing velocities to zero.
+    if (is_missing_velocity(velocity_raw)) {
         return 0.0;
     }
 
     // Compute velocity in physical units.
-    vec2 velocity = velocity_raw * u_scale + u_offset;
+    vec2 velocity = velocity_raw.rg * u_scale + u_offset;
     return length(velocity);
 }
 
 void main() {
-    // Get the speed at the current point (in physical units).
-    float speed = get_speed(v_tex_coord);
+    // Get the speed at the current point (in physical units), we need flipped
+    // texture coordinates because the velocity texture was loaded from an
+    // image and therefore flipped vertically.
+    float speed = get_speed(v_flipped_tex_coord);
 
     if (speed > 0.0) {
         // Find the coordinate into the colormap texture for this speed.

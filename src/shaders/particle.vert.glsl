@@ -12,12 +12,15 @@ uniform vec2 u_offset_in;
 
 uniform float u_dt;
 
-uniform int u_index_eliminate_start;
-uniform int u_index_eliminate_end;
+uniform float u_max_age;
 
-in vec2 a_position;
+in vec4 a_particle_data;
+in float a_particle_age;
 
-out vec2 v_position;
+out vec4 v_new_particle_data;
+out float v_new_particle_age;
+
+#include is_missing_velocity;
 
 // From: https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 float gold_noise(vec2 pos, float seed){
@@ -26,7 +29,7 @@ float gold_noise(vec2 pos, float seed){
 }
 
 vec2 random_position() {
-    vec2 pos = a_position;
+    vec2 pos = a_particle_data.xy;
     float x = gold_noise(pos, -123.456) * 2.0 - 1.0;
     float y = gold_noise(pos, 789.012) * 2.0 - 1.0;
     return vec2(x, y);
@@ -34,18 +37,21 @@ vec2 random_position() {
 
 vec2 get_clip_space_velocity(vec2 pos) {
     // Position is in clip space, but should be transformed to texture
-    // coordinates.
-    vec2 pos_texture = 0.5 * (pos + 1.0);
+    // coordinates. Because the velocity texture was loaded from an image, it is
+    // vertically flipped, so the v texture coordinate is inverted.
+    vec2 pos_texture = vec2(
+        0.5 + 0.5 * pos.x,
+        0.5 - 0.5 * pos.y
+    );
+    vec4 velocity_raw = texture(u_velocity_texture, pos_texture);
 
-    vec2 velocity_raw = texture(u_velocity_texture, pos_texture).xy;
-
-    // r = g = 255 means we have no velocity, set it to zero in that case.
-    if (velocity_raw.r == 1.0 && velocity_raw.g == 1.0) {
+    // Set missing velocities to zero.
+    if (is_missing_velocity(velocity_raw)) {
         return vec2(0.0, 0.0);
     }
 
     // Compute velocity in physical coordinates.
-    vec2 velocity = velocity_raw * u_scale_in + u_offset_in;
+    vec2 velocity = velocity_raw.rg * u_scale_in + u_offset_in;
 
     // Apply speed exponent to "compress" the speed---for exponents smaller
     // than 1, higher speeds will be closer together.
@@ -65,15 +71,36 @@ vec2 get_clip_space_velocity(vec2 pos) {
 }
 
 void main() {
-    vec2 pos = a_position;
-    if (gl_VertexID >= u_index_eliminate_start && gl_VertexID < u_index_eliminate_end) {
-        // Randomly selected particles will be eliminated.
-        v_position = random_position();
+    vec2 pos = a_particle_data.xy;
+    vec2 velocity = a_particle_data.zw;
+
+    vec2 new_position;
+    float new_age;
+    if (a_particle_age > u_max_age) {
+        // Particles that are too old will be reset to a random position, and be
+        // reset to an age of 0.
+        new_position = random_position();
+        new_age = 0.0;
+    } else if (velocity.x == 0.0 && velocity.y == 0.0) {
+        // Particles in regions without velocity will be reset to a random
+        // position. They are given a random age, because when suddenly zooming
+        // in strongly, many particles may be regenerated at once. If we give
+        // all these particle the same age, they will also all die at the same
+        // time.
+        new_position = random_position();
+        new_age = gold_noise(pos, 987.65) * u_max_age;
     } else if (pos.x < -1.0 || pos.x > 1.0 || pos.y < -1.0 || pos.y > 1.0) {
-        // Also generate new positions if our particle leaves clip space.
-        v_position = random_position();
+        // Also generate new positions and reset age to 0 if our particle leaves
+        // clip space.
+        new_position = random_position();
+        new_age = 0.0;
     } else {
-        vec2 velocity = get_clip_space_velocity(pos);
-        v_position = pos + velocity * u_dt;
+        new_position = pos + velocity * u_dt;
+        new_age = a_particle_age + u_dt;
     }
+
+    vec2 new_velocity = get_clip_space_velocity(new_position);
+
+    v_new_particle_data = vec4(new_position, new_velocity);
+    v_new_particle_age = new_age;
 }

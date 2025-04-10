@@ -31,7 +31,7 @@
     "noUnusedParameters": true,
     "verbatimModuleSyntax": true,
 
-    "types": ["vite-plugin-glsl/ext"]
+    "types": ["vite-plugin-glsl/ext", "vite/client"]
   },
   "include": ["examples", "src", "tests", "vite.config.ts", "vitest.config.ts"]
 }

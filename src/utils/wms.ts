@@ -158,6 +158,14 @@ export async function fetchWMSVelocityField(
     url.searchParams.append('elevation', `${elevation}`)
   }
 
+  return fetchGeoTiffVelocityField(url, signal, transformRequest)
+}
+
+export async function fetchGeoTiffVelocityField(
+  url: URL,
+  signal?: AbortSignal,
+  transformRequest?: TransformRequestFunction
+): Promise<VelocityImage> {
   const request = new Request(url)
   const transformedRequest = (await transformRequest?.(request)) ?? request
   const response = await fetch(new Request(transformedRequest, { signal }))
@@ -209,9 +217,8 @@ export async function fetchWMSVelocityField(
   const receivedHeight = fileDirectory.ImageLength!
   const uOffset = fileDirectory.ModelTiepoint![0]
   const uScale = fileDirectory.ModelPixelScale![0] * 255
-  // The y-offset and scale are negated, for some reason.
-  const vOffset = -fileDirectory.ModelTiepoint![1]
-  const vScale = -fileDirectory.ModelPixelScale![1] * 255
+  const vOffset = fileDirectory.ModelTiepoint![1]
+  const vScale = fileDirectory.ModelPixelScale![1] * 255
 
   return new VelocityImage(
     data,

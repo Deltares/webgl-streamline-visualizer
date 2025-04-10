@@ -32,8 +32,12 @@ const DEVELOPMENT_BUILD_OPTIONS: BuildOptions = {
   rollupOptions: {
     input: {
       vortex: resolveRelativePath('examples/vortex.html'),
+      vortex_sprite: resolveRelativePath('examples/vortex_sprites.html'),
       maplibre: resolveRelativePath('examples/maplibre.html'),
-      maplibre_basic: resolveRelativePath('examples/maplibre_basic.html')
+      maplibre_basic: resolveRelativePath('examples/maplibre_basic.html'),
+      maplibre_basic_sprites: resolveRelativePath(
+        'examples/maplibre_basic_sprites.html'
+      )
     }
   }
 }
@@ -42,7 +46,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     viteGlslPlugin({
       include: ['**/*.frag.glsl', '**/*.vert.glsl'],
-      compress: true
+      minify: true
     })
   ],
   build:
