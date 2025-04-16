@@ -33,5 +33,5 @@
 
     "types": ["vite-plugin-glsl/ext", "vite/client"]
   },
-  "include": ["examples", "src", "tests", "vite.config.ts", "vitest.config.ts"]
+  "include": ["examples", "src", "tests", "*.config.ts"]
 }
