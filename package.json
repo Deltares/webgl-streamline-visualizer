@@ -15,9 +15,11 @@
       "import": "./dist/webgl-streamline-visualizer.js"
     }
   },
+  "homepage": "https://deltares.github.io/webgl-streamline-visualizer/",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "vite --config vite-examples.config.ts",
+    "build": "tsc && vite build --config vite-library.config.ts",
+    "build-examples": "tsc && vite build --config vite-examples.config.ts",
     "lint": "eslint \"./src/**/*.ts\" \"./examples/**/*.ts\"",
     "preview": "vite preview",
     "test": "vitest",

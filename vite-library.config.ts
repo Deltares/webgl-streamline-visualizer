@@ -1,8 +1,11 @@
 import { resolve } from 'path'
 import { defineConfig, type BuildOptions } from 'vite'
-
-import rollupPluginTypescript from '@rollup/plugin-typescript'
 import viteGlslPlugin from 'vite-plugin-glsl'
+import rollupPluginTypescript from '@rollup/plugin-typescript'
+
+function resolveRelativePath(relative: string): string {
+  return resolve(__dirname, relative)
+}
 
 const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
   lib: {
@@ -28,38 +31,17 @@ const PRODUCTION_BUILD_OPTIONS: BuildOptions = {
   }
 }
 
-const DEVELOPMENT_BUILD_OPTIONS: BuildOptions = {
-  rollupOptions: {
-    input: {
-      vortex: resolveRelativePath('examples/vortex.html'),
-      vortex_sprite: resolveRelativePath('examples/vortex_sprites.html'),
-      maplibre: resolveRelativePath('examples/maplibre.html'),
-      maplibre_basic: resolveRelativePath('examples/maplibre_basic.html'),
-      maplibre_basic_sprites: resolveRelativePath(
-        'examples/maplibre_basic_sprites.html'
-      )
-    }
-  }
-}
-
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [
     viteGlslPlugin({
       include: ['**/*.frag.glsl', '**/*.vert.glsl'],
       minify: true
     })
   ],
-  build:
-    mode === 'production'
-      ? PRODUCTION_BUILD_OPTIONS
-      : DEVELOPMENT_BUILD_OPTIONS,
+  build: PRODUCTION_BUILD_OPTIONS,
   resolve: {
     alias: {
       '@': resolveRelativePath('./src')
     }
   }
-}))
-
-function resolveRelativePath(relative: string): string {
-  return resolve(__dirname, relative)
-}
+})
