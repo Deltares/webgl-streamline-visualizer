@@ -1,4 +1,5 @@
 # WebGL streamline visualizer
+
 A library for visualizing streamlines with moving particles, powered by WebGL.
 The visualizer can be run with velocity fields from any source, but has a
 MapLibre map layer that fetches WMS data from a FEWS WMS service.
@@ -9,11 +10,13 @@ visualization is powered by the user's GPU, allowing the visualization to run
 with thousands of particles at high FPS, even on mobile phones.
 
 ## Usage with MapLibre and FEWS WMS
+
 This library has been primarily developed for use with
 [MapLibre](https://maplibre.org/) and [FEWS Web Mapping
 Service](https://publicwiki.deltares.nl/display/FEWSDOC/FEWS+Web+Mapping+Service+with+time+support%3A+WMS-T).
 
 It can be added to an existing MapLibre map with:
+
 ```typescript
 // Create new animated streamlines layer based on options.
 const layer = new WMSStreamlineLayer('streamlines', options)
@@ -28,7 +31,12 @@ await layer.initialise()
 Refer to [`examples/maplibre_basic.ts`](examples/maplibre_basic.ts) for the full
 example.
 
+## Examples
+
+A hosted version of some of the examples can be found on the [GitHub Pages](https://deltares.github.io/webgl-streamline-visualizer/).
+
 ## Standalone usage
+
 The core of the WebGL streamline visualizer can also be used standalone, for
 example for integrating with your map library or velocity field source of
 choice.
@@ -38,7 +46,9 @@ the visualizer without a map library and generates velocity data with
 TypeScript function.
 
 ## For developers
+
 Install dependencies and initialize Playwright:
+
 ```bash
 npm install
 npx playwright install
@@ -46,21 +56,32 @@ npx playwright install
 
 Run a development server for the demo pages, listening for changes in the
 source:
+
 ```bash
 npm run dev
 ```
 
 Run the linter on the library and examples:
+
 ```bash
 npm run lint
 ```
 
 Run a production build of the library:
+
 ```bash
 npm run build
 ```
 
+To build and view the examples run (note you may have to adapt base to '/' in [the examples config](vite-examples.config.ts) )
+
+```bash
+npm run build:examples
+npm run preview
+```
+
 Run all tests, listening for change in the source:
+
 ```bash
 npm run test
 ```
