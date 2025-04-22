@@ -388,8 +388,10 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this._visualiser?.setNumParticles(numParticles)
   }
 
-  setVisualiserOptions(options: Partial<StreamlineVisualiserOptions>): void {
-    this._visualiser?.updateOptions(options)
+  async setVisualiserOptions(
+    options: Partial<StreamlineVisualiserOptions>
+  ): Promise<void> {
+    await this._visualiser?.updateOptions(options)
   }
 
   async setDisplayUnits(useDisplayUnits: boolean | undefined): Promise<void> {

@@ -79,15 +79,17 @@ export class ParticleRenderer {
     this.resetParticleDataTextures()
   }
 
-  destruct(): void {
+  destruct(doDeleteSharedResources: boolean = false): void {
     const gl = this.program.gl
     gl.deleteBuffer(this.positionBuffer)
     gl.deleteBuffer(this.texCoordBuffer)
     gl.deleteVertexArray(this.vertexArray)
-    gl.deleteTexture(this.particleDataTexture)
-    gl.deleteTexture(this.particleAgeTexture)
-    gl.deleteTexture(this.particleTexture)
-    this.program.destruct()
+    if (doDeleteSharedResources) {
+      gl.deleteTexture(this.particleTexture)
+      gl.deleteTexture(this.particleDataTexture)
+      gl.deleteTexture(this.particleAgeTexture)
+      this.program.destruct()
+    }
   }
 
   setDimensions(width: number, height: number): void {
