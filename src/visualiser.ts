@@ -46,6 +46,7 @@ export class StreamlineVisualiser {
   private isRendering: boolean
   private _numParticles: number
   private particleTextureSize: number
+  private programRenderParticles: ShaderProgram | null
   private _options: StreamlineVisualiserOptions
 
   private textureRenderer: TextureRenderer | null
@@ -75,6 +76,7 @@ export class StreamlineVisualiser {
     this.isRendering = false
     this._numParticles = numParticles
     this.particleTextureSize = particleTextureSize
+    this.programRenderParticles = null
     this._options = { ...options }
 
     this.textureRenderer = null
@@ -131,6 +133,10 @@ export class StreamlineVisualiser {
       programRenderTexture,
       programRenderFinal
     ] = await this.compileShaderPrograms()
+
+    // Store the particle renderer program for when we want to create a sprite
+    // renderer when the options change.
+    this.programRenderParticles = programRenderParticles
 
     // Create a texture to use as the particle sprite.
     const particleTexture = this.createParticleTexture()
@@ -307,7 +313,7 @@ export class StreamlineVisualiser {
     this.updateVelocityImage(velocityImage)
   }
 
-  updateOptions(options: Partial<StreamlineVisualiserOptions>) {
+  async updateOptions(options: Partial<StreamlineVisualiserOptions>) {
     if (
       !this.colorMap ||
       !this.particlePropagator ||
@@ -318,10 +324,34 @@ export class StreamlineVisualiser {
     }
     this._options = { ...this._options, ...options }
 
-    if (this.spriteRenderer === null && options.spriteUrl !== undefined) {
-      throw new Error(
-        'Cannot set sprite URL for a visualiser that was not initialised to render sprites.'
+    if (this.spriteRenderer === null && this._options.spriteUrl !== undefined) {
+      // Create new sprite renderer.
+      if (!this.programRenderParticles) {
+        throw new Error('Shaders were not compiled before changing options.')
+      }
+
+      const spriteTexture = await this.createSpriteTexture()
+      this.spriteRenderer = new ParticleRenderer(
+        this.programRenderParticles,
+        this.width,
+        this.height,
+        this._numParticles,
+        this._options.particleSize,
+        spriteTexture,
+        this.widthParticleDataTexture,
+        this.heightParticleDataTexture,
+        true,
+        this._options.maxAge,
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
       )
+      this.spriteRenderer.initialise()
+    } else if (
+      this.spriteRenderer !== null &&
+      this._options.spriteUrl === undefined
+    ) {
+      // Remove now-unused sprite renderer.
+      this.spriteRenderer.destruct(false)
+      this.spriteRenderer = null
     }
 
     if (this.velocityImage) {

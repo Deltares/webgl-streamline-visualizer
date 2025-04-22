@@ -65,7 +65,11 @@ function createStreamlinesLayer(): WMSStreamlineLayer {
         numParticles?: number,
         options?: Partial<StreamlineVisualiserOptions>
       ) => {
-        optionsControl.setOptions(numParticles, options)
+        optionsControl
+          .setOptions(numParticles, options)
+          .catch(error =>
+            console.error(`Failed to update options control: ${error}`)
+          )
       }
     )
   })

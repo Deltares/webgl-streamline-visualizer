@@ -4,6 +4,8 @@ import type {
   StreamlineVisualiserOptions
 } from '@/visualiser'
 
+import waveCrestUrl from './wave.svg'
+
 export class VisualiserOptionsControl extends HTMLElement {
   private container: HTMLDivElement
   private visualiser: StreamlineVisualiser | null = null
@@ -31,10 +33,10 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.initialiseControls()
   }
 
-  setOptions(
+  async setOptions(
     numParticles?: number,
     options?: Partial<StreamlineVisualiserOptions>
-  ): void {
+  ): Promise<void> {
     if (!this.visualiser) return
     if (numParticles) {
       this.visualiser.setNumParticles(numParticles)
@@ -43,7 +45,7 @@ export class VisualiserOptionsControl extends HTMLElement {
       )
     }
     if (options) {
-      this.visualiser.updateOptions(options)
+      await this.visualiser.updateOptions(options)
       this.onOptionsChangeCallbacks.forEach(callback => callback(options))
     }
   }
@@ -99,6 +101,13 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(maxAgeControl)
     this.container.appendChild(speedExponentControl)
     this.container.appendChild(growthRateControl)
+
+    // Optionally show a checkbox allow wave crests to be turned on and off.
+    const allowWaveCrest = this.getAttribute('allow-wave-crest') !== null
+    if (allowWaveCrest) {
+      const waveCrestControl = this.createWaveCrestControl(false)
+      this.container.appendChild(waveCrestControl)
+    }
   }
 
   private createStreamlineStyleSelectControl(): HTMLSelectElement {
@@ -135,7 +144,11 @@ export class VisualiserOptionsControl extends HTMLElement {
     select.addEventListener('input', () => {
       if (!this.visualiser) return
       const style = +select.value
-      this.visualiser.updateOptions({ style })
+      this.visualiser
+        .updateOptions({ style })
+        .catch(error =>
+          console.error(`Failed to update visualiser options: ${error}`)
+        )
     })
 
     this.onOptionsChangeCallbacks.push(options => {
@@ -181,7 +194,11 @@ export class VisualiserOptionsControl extends HTMLElement {
 
     const setOption = (value: number) => {
       if (!this.visualiser) return
-      this.visualiser.updateOptions({ [key]: value })
+      this.visualiser
+        .updateOptions({ [key]: value })
+        .catch(error =>
+          console.error(`Failed to update visualiser options: ${error}`)
+        )
     }
     const [labelElement, inputElement] = this.createNumericInput(
       label,
@@ -191,12 +208,46 @@ export class VisualiserOptionsControl extends HTMLElement {
     )
 
     this.onOptionsChangeCallbacks.push(options => {
-      if (key in options) {
+      const option = options[key]
+      if (option !== undefined) {
         inputElement.value = options[key]!.toString()
       }
     })
 
     return labelElement
+  }
+
+  private createWaveCrestControl(initialValue: boolean): HTMLLabelElement {
+    if (!this.visualiser) throw new Error('No attached visualiser.')
+
+    const el = document.createElement('label')
+    el.textContent = 'Use wave crest particles'
+    el.style.display = 'flex'
+    el.style.justifyContent = 'space-between'
+    el.style.columnGap = '10px'
+
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.checked = initialValue
+
+    input.addEventListener('input', () => {
+      if (!this.visualiser) return
+      this.visualiser
+        .updateOptions({
+          spriteUrl: input.checked ? new URL(waveCrestUrl) : undefined
+        })
+        .catch(error =>
+          console.error(`Failed to update visualiser options: ${error}`)
+        )
+    })
+
+    this.onOptionsChangeCallbacks.push(options => {
+      const useWaveCrests = options.spriteUrl !== undefined
+      input.checked = useWaveCrests
+    })
+
+    el.appendChild(input)
+    return el
   }
 
   private createNumericInput(
