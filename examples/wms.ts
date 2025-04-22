@@ -6,6 +6,8 @@ import type {
   Layer as FewsWmsLayer
 } from '@deltares/fews-wms-requests'
 
+import waveCrestUrl from './wave.svg'
+
 interface WmsStyle {
   id: string
   title: string
@@ -291,7 +293,11 @@ export class FewsWmsOptionsControl extends HTMLElement {
             speedExponent: fewsOptions?.speedExponent,
             particleColor: fewsOptions?.particleColor
               ? `#${fewsOptions?.particleColor}`
-              : undefined
+              : undefined,
+            spriteUrl:
+              fewsOptions?.particleType === 'wave-crest'
+                ? new URL(waveCrestUrl)
+                : undefined
           }
           const numParticles = fewsOptions?.numberOfParticles
 
