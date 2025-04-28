@@ -268,7 +268,7 @@ export class StreamlineVisualiser {
     }
     if (this._numParticles === numParticles) return
 
-    this.resetParticleTexture()
+    this.resetParticles()
 
     this._numParticles = numParticles
 
@@ -309,7 +309,7 @@ export class StreamlineVisualiser {
     velocityImage: VelocityImage,
     doResetParticles: boolean
   ): void {
-    if (doResetParticles) this.resetParticleTexture()
+    if (doResetParticles) this.resetParticles()
     this.updateVelocityImage(velocityImage)
   }
 
@@ -630,7 +630,10 @@ export class StreamlineVisualiser {
     this.textureRenderer?.swapBuffers()
   }
 
-  private resetParticleTexture(): void {
+  private resetParticles(): void {
+    // Reset particle positions and ages.
+    this.particlePropagator?.resetBuffers()
+    // Reset rendered particle textures.
     this.previousParticleTexture = this.createZeroTexture()
     this.currentParticleTexture = this.createZeroTexture()
     this.textureRenderer?.resetParticleTextures(

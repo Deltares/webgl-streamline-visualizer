@@ -152,6 +152,24 @@ export class ParticlePropagator {
     this.speedCurve = speedCurve
   }
 
+  resetBuffers(): void {
+    if (this.inputBuffers) this.inputBuffers.destroy()
+    if (this.outputBuffers) this.outputBuffers.destroy()
+
+    const gl = this.program.gl
+    this.inputBuffers = new ParticleBuffers(gl, this.numParticlesAllocate)
+    this.outputBuffers = new ParticleBuffers(gl, this.numParticlesAllocate)
+
+    // Initialise input buffer with random particle positions and ages.
+    const initialCoordinates = this.generateInitialParticleData()
+    const initialAges = this.generateInitialParticleAges()
+    this.inputBuffers.initialise(initialCoordinates, initialAges)
+
+    // Since we swap the buffers immediately in the update function, swap them
+    // here too.
+    this.swapBuffers()
+  }
+
   resetAges(): void {
     const initialAges = this.generateInitialParticleAges()
     // Set the new ages on the output buffer, since we swap the buffers at the
@@ -211,24 +229,6 @@ export class ParticlePropagator {
     // Re-enable the fragment shader and unbind the transform feedback.
     gl.disable(gl.RASTERIZER_DISCARD)
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null)
-  }
-
-  private resetBuffers(): void {
-    if (this.inputBuffers) this.inputBuffers.destroy()
-    if (this.outputBuffers) this.outputBuffers.destroy()
-
-    const gl = this.program.gl
-    this.inputBuffers = new ParticleBuffers(gl, this.numParticlesAllocate)
-    this.outputBuffers = new ParticleBuffers(gl, this.numParticlesAllocate)
-
-    // Initialise input buffer with random particle positions and ages.
-    const initialCoordinates = this.generateInitialParticleData()
-    const initialAges = this.generateInitialParticleAges()
-    this.inputBuffers.initialise(initialCoordinates, initialAges)
-
-    // Since we swap the buffers immediately in the update function, swap them
-    // here too.
-    this.swapBuffers()
   }
 
   private bindUniforms(dt: number): void {
