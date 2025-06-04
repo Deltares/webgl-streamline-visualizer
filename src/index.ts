@@ -2,7 +2,7 @@ export { WMSStreamlineLayer, type WMSStreamlineLayerOptions } from './layer'
 export { StreamlineStyle } from './render'
 export {
   StreamlineVisualiser,
-  type TrailParticleShape,
+  TrailParticleShape,
   type TrailParticleOptions,
   type StreamlineVisualiserOptions
 } from './visualiser'
