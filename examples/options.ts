@@ -1,5 +1,6 @@
 import { StreamlineStyle } from '@/render'
 import {
+  determineDoRotateParticles,
   TrailParticleShape,
   type StreamlineVisualiser,
   type StreamlineVisualiserOptions,
@@ -94,8 +95,11 @@ export class VisualiserOptionsControl extends HTMLElement {
       5
     )
     const aspectRatioControl = this.createTrailParticleAspectRatioControl()
-    const trailParticleShapeControl =
-      this.createTrailParticleShapeControl(aspectRatioControl)
+    const doRotateParticlesControl = this.createTrailParticlesDoRotateControl()
+    const trailParticleShapeControl = this.createTrailParticleShapeControl(
+      aspectRatioControl,
+      doRotateParticlesControl
+    )
 
     this.container.appendChild(styleSelect)
     this.container.appendChild(numParticlesControl)
@@ -107,6 +111,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(speedExponentControl)
     this.container.appendChild(growthRateControl)
     this.container.appendChild(trailParticleShapeControl)
+    this.container.appendChild(doRotateParticlesControl)
     this.container.appendChild(aspectRatioControl)
 
     // Optionally show a checkbox allow wave crests to be turned on and off.
@@ -168,7 +173,8 @@ export class VisualiserOptionsControl extends HTMLElement {
   }
 
   private createTrailParticleShapeControl(
-    aspectRatioControl: HTMLLabelElement
+    aspectRatioControl: HTMLLabelElement,
+    doRotateParticlesControl: HTMLLabelElement
   ): HTMLSelectElement {
     if (!this.visualiser) throw new Error('No attached visualiser.')
 
@@ -201,15 +207,23 @@ export class VisualiserOptionsControl extends HTMLElement {
         shape === TrailParticleShape.Circle
           ? undefined
           : this.visualiser.options.trailParticleOptions?.aspectRatio
+      const doRotate = shape !== TrailParticleShape.Circle
       const trailParticleOptions: TrailParticleOptions = {
         aspectRatio,
-        shape
+        shape,
+        doRotate
       }
       this.visualiser
         .updateOptions({ trailParticleOptions })
         .catch(error =>
           console.error(`Failed to update visualiser options: ${error}`)
         )
+
+      // Update "do rotate" checkbox.
+      const input = doRotateParticlesControl.querySelector(
+        'input'
+      ) as HTMLInputElement
+      input.checked = determineDoRotateParticles(this.visualiser.options)
 
       // Hide aspect ratio control if we use circles.
       if (shape === TrailParticleShape.Circle) {
@@ -237,7 +251,8 @@ export class VisualiserOptionsControl extends HTMLElement {
         shape:
           this.visualiser.options.trailParticleOptions?.shape ??
           TrailParticleShape.Circle,
-        aspectRatio: value
+        aspectRatio: value,
+        doRotate: determineDoRotateParticles(this.visualiser.options)
       }
       this.visualiser
         .updateOptions({ trailParticleOptions })
@@ -266,6 +281,44 @@ export class VisualiserOptionsControl extends HTMLElement {
     }
 
     return labelElement
+  }
+
+  private createTrailParticlesDoRotateControl(): HTMLLabelElement {
+    if (!this.visualiser) throw new Error('No attached visualiser.')
+
+    const el = document.createElement('label')
+    el.textContent = 'Rotate particles with velocity field?'
+    el.style.display = 'flex'
+    el.style.justifyContent = 'space-between'
+    el.style.columnGap = '10px'
+
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.checked = determineDoRotateParticles(this.visualiser.options)
+
+    el.appendChild(input)
+
+    input.addEventListener('input', () => {
+      if (!this.visualiser) return
+      const trailParticleOptions: TrailParticleOptions = {
+        shape:
+          this.visualiser.options.trailParticleOptions?.shape ??
+          TrailParticleShape.Circle,
+        aspectRatio: this.visualiser.options.trailParticleOptions?.aspectRatio,
+        doRotate: input.checked
+      }
+      this.visualiser
+        .updateOptions({ trailParticleOptions })
+        .catch(error =>
+          console.error(`Failed to update visualiser options: ${error}`)
+        )
+    })
+
+    this.onOptionsChangeCallbacks.push(options => {
+      input.checked = determineDoRotateParticles(options)
+    })
+
+    return el
   }
 
   private createNumParticlesControl(): HTMLLabelElement {

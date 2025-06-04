@@ -31,6 +31,7 @@ export enum TrailParticleShape {
 export interface TrailParticleOptions {
   shape: TrailParticleShape
   aspectRatio?: number
+  doRotate?: boolean
 }
 
 export interface StreamlineVisualiserOptions {
@@ -45,6 +46,17 @@ export interface StreamlineVisualiserOptions {
   particleColor?: string
   spriteUrl?: URL
   trailParticleOptions?: TrailParticleOptions
+}
+
+export function determineDoRotateParticles(
+  options: Partial<StreamlineVisualiserOptions>
+): boolean {
+  const configuredDoRotate = options.trailParticleOptions?.doRotate
+  if (configuredDoRotate !== undefined) {
+    return configuredDoRotate
+  }
+  const shape = options.trailParticleOptions?.shape ?? TrailParticleShape.Circle
+  return shape !== TrailParticleShape.Circle
 }
 
 export class StreamlineVisualiser {
@@ -170,6 +182,7 @@ export class StreamlineVisualiser {
       this._options.maxAge,
       speedCurve
     )
+
     this.particleRenderer = new ParticleRenderer(
       programRenderParticles,
       this.width,
@@ -181,7 +194,8 @@ export class StreamlineVisualiser {
       this.heightParticleDataTexture,
       false,
       this._options.maxAge,
-      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+      determineDoRotateParticles(this._options)
     )
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
@@ -209,7 +223,8 @@ export class StreamlineVisualiser {
         this.heightParticleDataTexture,
         true,
         this._options.maxAge,
-        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+        true
       )
       this.spriteRenderer.initialise()
     }
@@ -354,7 +369,8 @@ export class StreamlineVisualiser {
         this.heightParticleDataTexture,
         true,
         this._options.maxAge,
-        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+        true
       )
       this.spriteRenderer.initialise()
     } else if (
@@ -397,6 +413,9 @@ export class StreamlineVisualiser {
 
     const particleTexture = this.createParticleTexture()
     this.particleRenderer.setParticleTexture(particleTexture)
+
+    const doRotateParticles = determineDoRotateParticles(this._options)
+    this.particleRenderer.setDoRotateParticles(doRotateParticles)
   }
 
   renderFrame(dt: number) {
