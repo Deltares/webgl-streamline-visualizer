@@ -23,6 +23,16 @@ import { Colormap } from './utils/colormap'
 import type { BoundingBoxScaling } from './render/final'
 import { FragmentShader, VertexShader } from './utils/shader'
 
+export enum TrailParticleShape {
+  Circle = 'circle',
+  Rectangle = 'rectangle'
+}
+
+export interface TrailParticleOptions {
+  shape: TrailParticleShape
+  aspectRatio?: number
+}
+
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
   particleSize: number
@@ -34,6 +44,7 @@ export interface StreamlineVisualiserOptions {
   speedExponent?: number
   particleColor?: string
   spriteUrl?: URL
+  trailParticleOptions?: TrailParticleOptions
 }
 
 export class StreamlineVisualiser {
@@ -382,6 +393,9 @@ export class StreamlineVisualiser {
     }
 
     this.finalRenderer.style = this._options.style
+
+    const particleTexture = this.createParticleTexture()
+    this.particleRenderer.setParticleTexture(particleTexture)
   }
 
   renderFrame(dt: number) {
@@ -563,7 +577,6 @@ export class StreamlineVisualiser {
   }
 
   private createParticleTexture(): WebGLTexture {
-    const radius = 0.5 * this.particleTextureSize
     const width = this.particleTextureSize
     const height = this.particleTextureSize
     const canvas = new OffscreenCanvas(width, height)
@@ -572,14 +585,38 @@ export class StreamlineVisualiser {
       throw new Error('Could not initialise 2D offscreen canvas.')
     }
 
-    const x = radius
-    const y = radius
+    const shape =
+      this._options.trailParticleOptions?.shape ?? TrailParticleShape.Circle
+    const aspectRatio = this._options.trailParticleOptions?.aspectRatio ?? 1
     const particleColor = this._options.particleColor ?? 'black'
+    if (shape === TrailParticleShape.Circle) {
+      if (aspectRatio !== 1) {
+        console.warn(
+          'Specifying an aspect ratio is not supported circle-shaped trail particles.'
+        )
+      }
 
-    context.beginPath()
-    context.arc(x, y, radius, 0, 2 * Math.PI, false)
-    context.fillStyle = particleColor
-    context.fill()
+      const radius = 0.5 * this.particleTextureSize
+      const x = radius
+      const y = radius
+
+      context.beginPath()
+      context.arc(x, y, radius, 0, 2 * Math.PI, false)
+      context.fillStyle = particleColor
+      context.fill()
+    } else {
+      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio
+      const relativeHeight = aspectRatio <= 1 ? 1 : 1 / aspectRatio
+      const width = relativeWidth * this.particleTextureSize
+      const height = relativeHeight * this.particleTextureSize
+
+      // Put the particle in the centre of the texture.
+      const x = 0.5 * (this.particleTextureSize - width)
+      const y = 0.5 * (this.particleTextureSize - height)
+
+      context.fillStyle = particleColor
+      context.fillRect(x, y, width, height)
+    }
 
     const data = context.getImageData(0, 0, width, height).data
     return createTexture(this.gl, this.gl.LINEAR, data, width, height)

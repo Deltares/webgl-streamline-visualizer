@@ -112,6 +112,10 @@ export class ParticleRenderer {
     this.maxAge = maxAge
   }
 
+  setParticleTexture(texture: WebGLTexture): void {
+    this.particleTexture = texture
+  }
+
   render(particleBuffers: ParticleBuffers, scaling?: BoundingBoxScaling): void {
     if (!this.particleDataTexture || !this.particleAgeTexture) {
       throw new Error(

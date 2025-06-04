@@ -1,7 +1,9 @@
 import { StreamlineStyle } from '@/render'
-import type {
-  StreamlineVisualiser,
-  StreamlineVisualiserOptions
+import {
+  TrailParticleShape,
+  type StreamlineVisualiser,
+  type StreamlineVisualiserOptions,
+  type TrailParticleOptions
 } from '@/visualiser'
 
 import waveCrestUrl from './wave.svg'
@@ -91,6 +93,9 @@ export class VisualiserOptionsControl extends HTMLElement {
       1,
       5
     )
+    const aspectRatioControl = this.createTrailParticleAspectRatioControl()
+    const trailParticleShapeControl =
+      this.createTrailParticleShapeControl(aspectRatioControl)
 
     this.container.appendChild(styleSelect)
     this.container.appendChild(numParticlesControl)
@@ -101,6 +106,8 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(maxAgeControl)
     this.container.appendChild(speedExponentControl)
     this.container.appendChild(growthRateControl)
+    this.container.appendChild(trailParticleShapeControl)
+    this.container.appendChild(aspectRatioControl)
 
     // Optionally show a checkbox allow wave crests to be turned on and off.
     const allowWaveCrest = this.getAttribute('allow-wave-crest') !== null
@@ -160,6 +167,107 @@ export class VisualiserOptionsControl extends HTMLElement {
     return select
   }
 
+  private createTrailParticleShapeControl(
+    aspectRatioControl: HTMLLabelElement
+  ): HTMLSelectElement {
+    if (!this.visualiser) throw new Error('No attached visualiser.')
+
+    const select = document.createElement('select')
+    const options = [
+      {
+        title: 'Circle',
+        value: TrailParticleShape.Circle
+      },
+      {
+        title: 'Rectangle',
+        value: TrailParticleShape.Rectangle
+      }
+    ]
+    options.forEach(option => {
+      const el = document.createElement('option')
+      el.value = option.value.toString()
+      el.textContent = option.title
+
+      select.appendChild(el)
+    })
+
+    select.value =
+      this.visualiser.options.trailParticleOptions?.shape ??
+      TrailParticleShape.Circle
+    select.addEventListener('input', () => {
+      if (!this.visualiser) return
+      const shape = select.value as TrailParticleShape
+      const aspectRatio =
+        shape === TrailParticleShape.Circle
+          ? undefined
+          : this.visualiser.options.trailParticleOptions?.aspectRatio
+      const trailParticleOptions: TrailParticleOptions = {
+        aspectRatio,
+        shape
+      }
+      this.visualiser
+        .updateOptions({ trailParticleOptions })
+        .catch(error =>
+          console.error(`Failed to update visualiser options: ${error}`)
+        )
+
+      // Hide aspect ratio control if we use circles.
+      if (shape === TrailParticleShape.Circle) {
+        aspectRatioControl.style.display = 'none'
+      } else {
+        aspectRatioControl.style.display = 'flex'
+      }
+    })
+
+    this.onOptionsChangeCallbacks.push(options => {
+      if (options.trailParticleOptions?.shape) {
+        select.value = options.trailParticleOptions?.shape
+      }
+    })
+
+    return select
+  }
+
+  private createTrailParticleAspectRatioControl(): HTMLLabelElement {
+    if (!this.visualiser) throw new Error('No attached visualiser.')
+
+    const setOption = (value: number) => {
+      if (!this.visualiser) return
+      const trailParticleOptions: TrailParticleOptions = {
+        shape:
+          this.visualiser.options.trailParticleOptions?.shape ??
+          TrailParticleShape.Circle,
+        aspectRatio: value
+      }
+      this.visualiser
+        .updateOptions({ trailParticleOptions })
+        .catch(error =>
+          console.error(`Failed to update visualiser options: ${error}`)
+        )
+    }
+    const [labelElement, inputElement] = this.createNumericInput(
+      'Trail particle aspect ratio',
+      this.visualiser.options.trailParticleOptions?.aspectRatio ?? 1,
+      0.1,
+      setOption
+    )
+
+    this.onOptionsChangeCallbacks.push(options => {
+      const aspectRatio = options.trailParticleOptions?.aspectRatio ?? 1
+      inputElement.value = aspectRatio.toString()
+    })
+
+    // Hide the control if we use circles.
+    const shape =
+      this.visualiser.options.trailParticleOptions?.shape ??
+      TrailParticleShape.Circle
+    if (shape === TrailParticleShape.Circle) {
+      labelElement.style.display = 'none'
+    }
+
+    return labelElement
+  }
+
   private createNumParticlesControl(): HTMLLabelElement {
     if (!this.visualiser) throw new Error('No attached visualiser.')
 
@@ -185,7 +293,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     label: string,
     key: keyof Omit<
       StreamlineVisualiserOptions,
-      'style' | 'particleColor' | 'spriteUrl'
+      'style' | 'particleColor' | 'spriteUrl' | 'trailParticleOptions'
     >,
     step: number,
     defaultValue: number = 0
