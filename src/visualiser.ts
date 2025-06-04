@@ -56,7 +56,6 @@ export class StreamlineVisualiser {
   private height: number
   private isRendering: boolean
   private _numParticles: number
-  private particleTextureSize: number
   private programRenderParticles: ShaderProgram | null
   private _options: StreamlineVisualiserOptions
 
@@ -78,7 +77,6 @@ export class StreamlineVisualiser {
     width: number,
     height: number,
     numParticles: number,
-    particleTextureSize: number,
     options: StreamlineVisualiserOptions
   ) {
     this.gl = gl
@@ -86,7 +84,6 @@ export class StreamlineVisualiser {
     this.height = height
     this.isRendering = false
     this._numParticles = numParticles
-    this.particleTextureSize = particleTextureSize
     this.programRenderParticles = null
     this._options = { ...options }
 
@@ -117,6 +114,10 @@ export class StreamlineVisualiser {
 
   private get numParticlesAllocate(): number {
     return this.widthParticleDataTexture * this.heightParticleDataTexture
+  }
+
+  private get particleTextureSize(): number {
+    return 2 * this.options.particleSize
   }
 
   get isInitialised(): boolean {
