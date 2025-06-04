@@ -53,16 +53,21 @@ vec2 get_clip_space_velocity(vec2 pos) {
     // Compute velocity in physical coordinates.
     vec2 velocity = velocity_raw.rg * u_scale_in + u_offset_in;
 
-    // Apply speed exponent to "compress" the speed---for exponents smaller
-    // than 1, higher speeds will be closer together.
-    float speed_compressed = pow(length(velocity), u_speed_exponent);
+    if (u_speed_exponent == 0.0) {
+        // For a speed exponent of exactly 0, only use the velocity direction
+        // and ignore its magnitude.
+        velocity = normalize(velocity) * u_speed_factor;
+    } else {
+        // Apply speed exponent to "compress" the speed---for exponents smaller
+        // than 1, higher speeds will be closer together.
+        float speed_compressed = pow(length(velocity), u_speed_exponent);
 
-    // Scale the speed by the speed factor so it is appropriately scaled for
-    // particles moving in clip space.
-    speed_compressed *= u_speed_factor;
-
-    // Finally, compute the velocity based on the compressed speed.
-    velocity = normalize(velocity) * speed_compressed;
+        // Scale the speed by the speed factor so it is appropriately scaled for
+        // particles moving in clip space.
+        speed_compressed *= u_speed_factor;
+        // Finally, compute the velocity based on the compressed speed.
+        velocity = normalize(velocity) * speed_compressed;
+    }
 
     // Correct the x-velocity for the aspect ratio of the canvas.
     velocity.x *= u_aspect_ratio;

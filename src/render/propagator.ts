@@ -260,7 +260,9 @@ export class ParticlePropagator {
     )
     gl.uniform1f(
       this.program.getUniformLocation('u_speed_factor'),
-      this.speedCurve.factor
+      this.speedCurve.exponent === 0
+        ? this.speedCurve.baseFactor
+        : this.speedCurve.factor
     )
     gl.uniform1f(
       this.program.getUniformLocation('u_speed_exponent'),
