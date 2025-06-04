@@ -32,7 +32,6 @@ float compute_particle_size(float age) {
             shrink_start_age * u_growth_rate * u_particle_size,
             u_particle_size
         );
-        float shrink_rate = start_size / shrink_time;
         float shrink_factor = 1.0 - (age - shrink_start_age) / shrink_time;
         return start_size * shrink_factor;
     } else {
