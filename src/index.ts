@@ -3,6 +3,7 @@ export { StreamlineStyle } from './render'
 export {
   StreamlineVisualiser,
   type TrailParticleShape,
+  type TrailParticleOptions,
   type StreamlineVisualiserOptions
 } from './visualiser'
 export {
