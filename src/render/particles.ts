@@ -21,6 +21,7 @@ export class ParticleRenderer {
   private widthParticleDataTexture: number
   private heightParticleDataTexture: number
   private isSpriteRenderer: boolean
+  private doRotateParticles: boolean
 
   constructor(
     program: ShaderProgram,
@@ -33,7 +34,8 @@ export class ParticleRenderer {
     heightParticleDataTexture: number,
     isSpriteRenderer: boolean,
     maxAge: number,
-    growthRate: number
+    growthRate: number,
+    doRotateParticles: boolean
   ) {
     this.program = program
 
@@ -55,6 +57,7 @@ export class ParticleRenderer {
     this.vertexArray = null
 
     this.isSpriteRenderer = isSpriteRenderer
+    this.doRotateParticles = doRotateParticles
   }
 
   initialise(): void {
@@ -110,6 +113,14 @@ export class ParticleRenderer {
 
   setMaxAge(maxAge: number): void {
     this.maxAge = maxAge
+  }
+
+  setParticleTexture(texture: WebGLTexture): void {
+    this.particleTexture = texture
+  }
+
+  setDoRotateParticles(doRotateParticles: boolean): void {
+    this.doRotateParticles = doRotateParticles
   }
 
   render(particleBuffers: ParticleBuffers, scaling?: BoundingBoxScaling): void {
@@ -257,8 +268,8 @@ export class ParticleRenderer {
       this.width / this.height
     )
     gl.uniform1i(
-      this.program.getUniformLocation('u_is_sprite'),
-      this.isSpriteRenderer ? 1 : 0
+      this.program.getUniformLocation('u_do_rotate_particles'),
+      this.doRotateParticles ? 1 : 0
     )
 
     // Width of the data texture to retrieve the particle positions in the

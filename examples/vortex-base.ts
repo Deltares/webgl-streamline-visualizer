@@ -85,16 +85,12 @@ export async function initialiseVisualiser(
     throw new Error('Could not create WebGL2 rendering context.')
   }
 
-  // Use same particle texture size as the initial particle size.
-  const particleTextureSize = options.particleSize
-
   // Create visualiser.
   const visualiser = new StreamlineVisualiser(
     gl,
     width,
     height,
     numParticles,
-    particleTextureSize,
     options
   )
 

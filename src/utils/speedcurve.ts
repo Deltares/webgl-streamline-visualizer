@@ -4,10 +4,12 @@
 export class SpeedCurve {
   private _exponent: number
   private _factor: number
+  private _baseFactor: number
 
-  constructor(exponent: number, factor: number) {
+  constructor(exponent: number, factor: number, baseFactor: number) {
     this._exponent = exponent
     this._factor = factor
+    this._baseFactor = baseFactor
   }
 
   /** Exponent of the curve. */
@@ -20,6 +22,14 @@ export class SpeedCurve {
     return this._factor
   }
 
+  /** Base speed factor
+   *
+   *  This is the multiplication factor that would be applied if the exponent
+   *  would be 1.
+   */
+  get baseFactor(): number {
+    return this._baseFactor
+  }
   /**
    * Returns a speed curve from an exponent and a speed.
    *
@@ -37,6 +47,6 @@ export class SpeedCurve {
   ): SpeedCurve {
     const transformedSpeed = Math.pow(speed, exponent)
     const finalFactor = (factor * speed) / transformedSpeed
-    return new SpeedCurve(exponent, finalFactor)
+    return new SpeedCurve(exponent, finalFactor, factor)
   }
 }

@@ -23,6 +23,17 @@ import { Colormap } from './utils/colormap'
 import type { BoundingBoxScaling } from './render/final'
 import { FragmentShader, VertexShader } from './utils/shader'
 
+export enum TrailParticleShape {
+  Circle = 'circle',
+  Rectangle = 'rectangle'
+}
+
+export interface TrailParticleOptions {
+  shape: TrailParticleShape
+  aspectRatio?: number
+  doRotate?: boolean
+}
+
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
   particleSize: number
@@ -34,6 +45,18 @@ export interface StreamlineVisualiserOptions {
   speedExponent?: number
   particleColor?: string
   spriteUrl?: URL
+  trailParticleOptions?: TrailParticleOptions
+}
+
+export function determineDoRotateParticles(
+  options: Partial<StreamlineVisualiserOptions>
+): boolean {
+  const configuredDoRotate = options.trailParticleOptions?.doRotate
+  if (configuredDoRotate !== undefined) {
+    return configuredDoRotate
+  }
+  const shape = options.trailParticleOptions?.shape ?? TrailParticleShape.Circle
+  return shape !== TrailParticleShape.Circle
 }
 
 export class StreamlineVisualiser {
@@ -45,7 +68,6 @@ export class StreamlineVisualiser {
   private height: number
   private isRendering: boolean
   private _numParticles: number
-  private particleTextureSize: number
   private programRenderParticles: ShaderProgram | null
   private _options: StreamlineVisualiserOptions
 
@@ -67,7 +89,6 @@ export class StreamlineVisualiser {
     width: number,
     height: number,
     numParticles: number,
-    particleTextureSize: number,
     options: StreamlineVisualiserOptions
   ) {
     this.gl = gl
@@ -75,7 +96,6 @@ export class StreamlineVisualiser {
     this.height = height
     this.isRendering = false
     this._numParticles = numParticles
-    this.particleTextureSize = particleTextureSize
     this.programRenderParticles = null
     this._options = { ...options }
 
@@ -106,6 +126,10 @@ export class StreamlineVisualiser {
 
   private get numParticlesAllocate(): number {
     return this.widthParticleDataTexture * this.heightParticleDataTexture
+  }
+
+  private get particleTextureSize(): number {
+    return 2 * this.options.particleSize
   }
 
   get isInitialised(): boolean {
@@ -158,6 +182,7 @@ export class StreamlineVisualiser {
       this._options.maxAge,
       speedCurve
     )
+
     this.particleRenderer = new ParticleRenderer(
       programRenderParticles,
       this.width,
@@ -169,7 +194,8 @@ export class StreamlineVisualiser {
       this.heightParticleDataTexture,
       false,
       this._options.maxAge,
-      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+      determineDoRotateParticles(this._options)
     )
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
@@ -197,7 +223,8 @@ export class StreamlineVisualiser {
         this.heightParticleDataTexture,
         true,
         this._options.maxAge,
-        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+        true
       )
       this.spriteRenderer.initialise()
     }
@@ -342,7 +369,8 @@ export class StreamlineVisualiser {
         this.heightParticleDataTexture,
         true,
         this._options.maxAge,
-        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE
+        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+        true
       )
       this.spriteRenderer.initialise()
     } else if (
@@ -382,6 +410,12 @@ export class StreamlineVisualiser {
     }
 
     this.finalRenderer.style = this._options.style
+
+    const particleTexture = this.createParticleTexture()
+    this.particleRenderer.setParticleTexture(particleTexture)
+
+    const doRotateParticles = determineDoRotateParticles(this._options)
+    this.particleRenderer.setDoRotateParticles(doRotateParticles)
   }
 
   renderFrame(dt: number) {
@@ -563,7 +597,6 @@ export class StreamlineVisualiser {
   }
 
   private createParticleTexture(): WebGLTexture {
-    const radius = 0.5 * this.particleTextureSize
     const width = this.particleTextureSize
     const height = this.particleTextureSize
     const canvas = new OffscreenCanvas(width, height)
@@ -572,14 +605,38 @@ export class StreamlineVisualiser {
       throw new Error('Could not initialise 2D offscreen canvas.')
     }
 
-    const x = radius
-    const y = radius
+    const shape =
+      this._options.trailParticleOptions?.shape ?? TrailParticleShape.Circle
+    const aspectRatio = this._options.trailParticleOptions?.aspectRatio ?? 1
     const particleColor = this._options.particleColor ?? 'black'
+    if (shape === TrailParticleShape.Circle) {
+      if (aspectRatio !== 1) {
+        console.warn(
+          'Specifying an aspect ratio is not supported circle-shaped trail particles.'
+        )
+      }
 
-    context.beginPath()
-    context.arc(x, y, radius, 0, 2 * Math.PI, false)
-    context.fillStyle = particleColor
-    context.fill()
+      const radius = 0.5 * this.particleTextureSize
+      const x = radius
+      const y = radius
+
+      context.beginPath()
+      context.arc(x, y, radius, 0, 2 * Math.PI, false)
+      context.fillStyle = particleColor
+      context.fill()
+    } else {
+      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio
+      const relativeHeight = aspectRatio <= 1 ? 1 : 1 / aspectRatio
+      const width = relativeWidth * this.particleTextureSize
+      const height = relativeHeight * this.particleTextureSize
+
+      // Put the particle in the centre of the texture.
+      const x = 0.5 * (this.particleTextureSize - width)
+      const y = 0.5 * (this.particleTextureSize - height)
+
+      context.fillStyle = particleColor
+      context.fillRect(x, y, width, height)
+    }
 
     const data = context.getImageData(0, 0, width, height).data
     return createTexture(this.gl, this.gl.LINEAR, data, width, height)
