@@ -9,6 +9,7 @@ import {
 import {
   type BoundingBoxScaling,
   type StreamlineVisualiserOptions,
+  type TrailParticleOptions,
   StreamlineStyle,
   StreamlineVisualiser,
   fetchWMSAvailableTimesAndElevations,
@@ -33,6 +34,7 @@ export interface WMSStreamlineLayerOptions {
   speedExponent?: number
   particleColor?: string
   spriteUrl?: URL
+  trailParticleOptions?: TrailParticleOptions
   transformRequest?: TransformRequestFunction
 }
 
@@ -528,7 +530,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       growthRate: options.growthRate,
       speedExponent: options.speedExponent,
       particleColor: options.particleColor,
-      spriteUrl: options.spriteUrl
+      spriteUrl: options.spriteUrl,
+      trailParticleOptions: options.trailParticleOptions
     }
   }
 }
