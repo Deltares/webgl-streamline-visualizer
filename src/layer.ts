@@ -23,6 +23,7 @@ export interface WMSStreamlineLayerOptions {
   layer: string
   style?: string
   useDisplayUnits?: boolean
+  useLastValue?: boolean
   streamlineStyle: StreamlineStyle
   numParticles: number
   particleSize: number
@@ -404,6 +405,15 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     await this.updateVelocityField(false)
   }
 
+  async setUseLastValue(useLastValue: boolean): Promise<void> {
+    // No change, do not update.
+    if (useLastValue === this.options.useLastValue) return
+
+    this.options.useLastValue = useLastValue
+
+    await this.updateVelocityField(false)
+  }
+
   private createVisualiser(
     gl: WebGL2RenderingContext,
     options: WMSStreamlineLayerOptions
@@ -480,6 +490,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
         heightWMS,
         this.options.style,
         this.options.useDisplayUnits,
+        this.options.useLastValue,
         this.elevation ?? undefined,
         this.signal,
         this.options.transformRequest

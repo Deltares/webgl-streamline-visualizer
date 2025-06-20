@@ -130,6 +130,7 @@ export async function fetchWMSVelocityField(
   height: number,
   style?: string,
   useDisplayUnits?: boolean,
+  useLastValue?: boolean,
   elevation?: number,
   signal?: AbortSignal,
   transformRequest?: TransformRequestFunction
@@ -147,6 +148,9 @@ export async function fetchWMSVelocityField(
   url.searchParams.append('convertVectortoRG', 'true')
   if (style) {
     url.searchParams.append('styles', style)
+  }
+  if (useLastValue !== undefined) {
+    url.searchParams.append('useLastValue', useLastValue ? 'true' : 'false')
   }
   if (useDisplayUnits !== undefined) {
     url.searchParams.append(
