@@ -90,9 +90,12 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   // Pause rendering during map resizes; rendering will be continued by the
   // newly fetched velocity field.
   private onResizeStart = () => this._visualiser?.stop()
+  private onMapMoveStart = () => (this.hasStoppedMoving = false)
   // Map moveend events are fired during resize animations, so we debounce the
   // callback to prevent too many velocity field updates from happening.
   private debouncedOnMapMoveEnd = debounce(() => this.onMapMoveEnd(), 100)
+  // We wait with fetching the image until the map has stopped moving
+  private hasStoppedMoving: boolean
 
   constructor(id: string, options: WMSStreamlineLayerOptions) {
     this._id = id
@@ -115,6 +118,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
     this.isInitialised = false
     this.abortController = new AbortController()
+
+    this.hasStoppedMoving = true
 
     this.onLayerAdd = null
     this.onStartLoading = null
@@ -178,6 +183,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.abortController.abort()
     this.map
       ?.off('resize', this.onResizeStart)
+      .off('movestart', this.onMapMoveStart)
       .off('moveend', this.debouncedOnMapMoveEnd)
     this._visualiser?.destruct()
     this._visualiser = null
@@ -301,6 +307,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     // already aborted any requests because the layer is being removed.
     if (this.signal.aborted) return
     this.map.on('resize', this.onResizeStart)
+    this.map.on('movestart', this.onMapMoveStart)
     this.map.on('moveend', this.debouncedOnMapMoveEnd)
 
     this.isInitialised = true
@@ -433,6 +440,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   }
 
   private onMapMoveEnd(): void {
+    this.hasStoppedMoving = true
+
     const doResetParticles = true
     this.updateVelocityField(doResetParticles).catch(() =>
       console.error('Failed to update velocity field.')
@@ -441,6 +450,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
   private async updateVelocityField(doResetParticles: boolean): Promise<void> {
     if (!this.map) throw new Error('Not added to a map')
+
+    if (!this.hasStoppedMoving) return
 
     if (this.onStartLoading) this.onStartLoading()
 
