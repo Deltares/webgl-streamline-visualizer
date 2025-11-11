@@ -26,7 +26,7 @@
     "test-once": "vitest run"
   },
   "devDependencies": {
-    "@deltares/fews-wms-requests": "^4.0.0",
+    "@deltares/fews-wms-requests": "^4.0.1",
     "@eslint/js": "^9.39.1",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/lodash-es": "^4.17.12",
