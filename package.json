@@ -49,5 +49,16 @@
   },
   "volta": {
     "node": "22.14.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deltares/webgl-streamline-visualizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/deltares/webgl-streamline-visualizer/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }
