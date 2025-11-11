@@ -52,10 +52,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/deltares/webgl-streamline-visualizer"
+    "url": "git+https://github.com/Deltares/webgl-streamline-visualizer.git"
   },
   "bugs": {
-    "url": "https://github.com/deltares/webgl-streamline-visualizer/issues"
+    "url": "https://github.com/Deltares/webgl-streamline-visualizer/issues"
   },
   "publishConfig": {
     "access": "public",
