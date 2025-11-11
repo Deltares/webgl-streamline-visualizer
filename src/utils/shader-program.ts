@@ -210,7 +210,7 @@ export class ShaderProgram {
  */
 export function createAndFillStaticBuffer(
   gl: WebGL2RenderingContext,
-  data: ArrayBuffer
+  data: AllowSharedBufferSource 
 ): WebGLBuffer {
   const buffer = gl.createBuffer()
   if (buffer === null) {
