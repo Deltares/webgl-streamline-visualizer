@@ -260,7 +260,7 @@ export class ParticleRenderer {
     // Properties of the texture used to render the particle sprites; rescale
     // particle size to clip coordinates. Also take into account display
     // scaling so particles are not tiny on UHD-screens...
-    const scalingFactor = window.devicePixelRatio ?? 1
+    const scalingFactor = globalThis.devicePixelRatio ?? 1
     const particleSizeClipCoords =
       (this.particleSize * scalingFactor) / this.width
     gl.uniform1f(

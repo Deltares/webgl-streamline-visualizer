@@ -113,9 +113,9 @@ export async function initialiseVisualiser(
 
     visualiser.renderFrame(dt)
 
-    window.requestAnimationFrame(renderFrame)
+    globalThis.requestAnimationFrame(renderFrame)
   }
-  window.requestAnimationFrame(renderFrame)
+  globalThis.requestAnimationFrame(renderFrame)
 
   return visualiser
 }

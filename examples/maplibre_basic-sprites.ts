@@ -33,7 +33,7 @@ const options: WMSStreamlineLayerOptions = {
   speedExponent: 0.7,
   growthRate: 1,
   maxAge: 2,
-  spriteUrl: new URL(spriteUrl, window.location.origin)
+  spriteUrl: new URL(spriteUrl, globalThis.location.origin)
 }
 
 const layer = new WMSStreamlineLayer('streamlines', options)

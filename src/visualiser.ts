@@ -131,7 +131,7 @@ export class StreamlineVisualiser {
   private get particleTextureSize(): number {
     // Final particle size in pixels depends on the display scaling, so take
     // this into account to create the particle texture.
-    const scalingFactor = window.devicePixelRatio ?? 1
+    const scalingFactor = globalThis.devicePixelRatio ?? 1
     return Math.ceil(2 * scalingFactor * this.options.particleSize)
   }
 

@@ -256,7 +256,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
         // If the layer is not yet initialised or aborted, wait a bit and check
         // again.
-        window.setTimeout(checkInitialisation, 50)
+        globalThis.setTimeout(checkInitialisation, 50)
       }
       checkInitialisation()
     })
