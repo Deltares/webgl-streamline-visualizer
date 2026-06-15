@@ -20,9 +20,9 @@ export class Color {
    * @returns color parsed from the hexadecimal color string.
    */
   static fromHex(hex: string): Color {
-    const r = parseInt(hex.substring(1, 3), 16)
-    const g = parseInt(hex.substring(3, 5), 16)
-    const b = parseInt(hex.substring(5, 7), 16)
+    const r = Number.parseInt(hex.substring(1, 3), 16)
+    const g = Number.parseInt(hex.substring(3, 5), 16)
+    const b = Number.parseInt(hex.substring(5, 7), 16)
     return new Color(r, g, b)
   }
 }
