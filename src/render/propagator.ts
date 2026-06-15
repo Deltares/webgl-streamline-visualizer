@@ -299,13 +299,13 @@ export class ParticlePropagator {
     const ages = new Float32Array(this.numParticles)
     for (let i = 0; i < this.numParticles; i++) {
       // Generate random ages such that not all particles die at the same time.
-      ages[i] = Math.random() * this.maxAge
+      ages[i] = Math.random() * this.maxAge // NOSONAR(S2245) - Non-cryptographic random used for visual effect
     }
     return ages
   }
 
   private static randomClipCoords(): [number, number] {
-    const randomClipCoord = () => Math.random() * 2 - 1
+    const randomClipCoord = () => Math.random() * 2 - 1 // NOSONAR(S2245) - Non-cryptographic random used for visual effect
     return [randomClipCoord(), randomClipCoord()]
   }
 }

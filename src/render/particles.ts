@@ -139,15 +139,16 @@ export class ParticleRenderer {
     this.program.use()
 
     gl.enable(gl.BLEND)
-    if (!this.isSpriteRenderer) {
+    if (this.isSpriteRenderer) {
+      gl.blendEquation(gl.FUNC_ADD)
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+    } else {
       // We keep the current state of the frame buffer and render the particles on
       // top of it, ignoring alpha for this blending as it has already been taken
       // care of in the texture render.
       gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX)
       gl.blendFunc(gl.ONE, gl.ONE)
-    } else {
-      gl.blendEquation(gl.FUNC_ADD)
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     }
 
     gl.bindVertexArray(this.vertexArray)
