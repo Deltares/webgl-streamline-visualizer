@@ -114,7 +114,7 @@ export class FewsWmsOptionsControl extends HTMLElement {
   private createSelectControl(placeholder: string): HTMLSelectElement {
     const el = document.createElement('select')
     el.disabled = true
-    el.setAttribute('data-placeholder', placeholder)
+    el.dataset['placeholder'] = placeholder
 
     const placeholderOption = document.createElement('option')
     placeholderOption.textContent = placeholder
@@ -353,8 +353,8 @@ export class FewsWmsOptionsControl extends HTMLElement {
   private selectElevation(): void {
     if (!this.layer) throw new Error('No attached layer.')
 
-    const elevation = parseFloat(this.elevationInput.value)
-    if (isNaN(elevation)) return
+    const elevation = Number.parseFloat(this.elevationInput.value)
+    if (Number.isNaN(elevation)) return
 
     this.layer
       .setElevation(elevation)
@@ -367,7 +367,7 @@ export class FewsWmsOptionsControl extends HTMLElement {
 
   private disableControls(): void {
     const restorePlaceholder = (el: HTMLSelectElement) => {
-      el.innerHTML = `<option>${el.getAttribute('data-placeholder')}</option>`
+      el.innerHTML = `<option>${el.dataset['placeholder']}</option>`
     }
     restorePlaceholder(this.layerSelect)
     restorePlaceholder(this.styleSelect)
