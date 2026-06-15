@@ -440,8 +440,8 @@ export class VisualiserOptionsControl extends HTMLElement {
     value: string,
     callback: (value: number) => void
   ): void {
-    const numericValue = parseFloat(value)
-    if (isNaN(numericValue)) return
+    const numericValue = Number.parseFloat(value)
+    if (Number.isNaN(numericValue)) return
     callback(numericValue)
   }
 }
