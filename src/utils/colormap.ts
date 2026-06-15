@@ -33,8 +33,8 @@ export class Color {
  * Its values may be non-uniformly spaced.
  */
 export class Colormap {
-  private values: number[]
-  private colors: Color[]
+  private readonly values: number[]
+  private readonly colors: Color[]
 
   constructor(values: number[], colors: Color[]) {
     if (values.length !== colors.length) {
