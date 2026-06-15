@@ -46,6 +46,7 @@ export interface StreamlineVisualiserOptions {
   particleColor?: string
   spriteUrl?: URL
   trailParticleOptions?: TrailParticleOptions
+  particleOverlayOpacity?: number
 }
 
 export function determineDoRotateParticles(
@@ -203,7 +204,8 @@ export class StreamlineVisualiser {
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
       this._options.style,
-      colormap
+      colormap,
+      this._options.particleOverlayOpacity
     )
 
     this.textureRenderer.initialise()
@@ -413,6 +415,8 @@ export class StreamlineVisualiser {
     }
 
     this.finalRenderer.style = this._options.style
+    this.finalRenderer.particleOverlayOpacity =
+      this._options.particleOverlayOpacity ?? 1.0
 
     const particleTexture = this.createParticleTexture()
     this.particleRenderer.setParticleTexture(particleTexture)

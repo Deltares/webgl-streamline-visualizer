@@ -2,6 +2,7 @@
 precision highp float;
 
 uniform int u_style;
+uniform float u_particle_opacity;
 
 uniform sampler2D u_particle_texture;
 uniform sampler2D u_colormap_texture;
@@ -58,11 +59,11 @@ void main() {
             color = mix(
                 magnitude_color,
                 vec4(1.0, 1.0, 1.0, 1.0),
-                particle_color.a
+                particle_color.a * u_particle_opacity
             );
         } else if (u_style == 1) {
             // Render dark particles on velocity magnitude.
-            float factor = 1.0 - particle_color.a;
+            float factor = 1.0 - particle_color.a * u_particle_opacity;
             color = magnitude_color;
             color.rgb *= factor * 0.8 + 0.2;
         } else if (u_style == 2) {

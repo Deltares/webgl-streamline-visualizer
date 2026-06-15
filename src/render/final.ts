@@ -21,6 +21,7 @@ export class FinalRenderer {
   private static readonly NUM_SEGMENTS_COLORMAP = 64
 
   public style: StreamlineStyle
+  public particleOverlayOpacity: number
 
   private readonly program: ShaderProgram
   private positionBuffer: WebGLBuffer | null
@@ -34,10 +35,12 @@ export class FinalRenderer {
   constructor(
     program: ShaderProgram,
     style: StreamlineStyle,
-    colormap: Colormap
+    colormap: Colormap,
+    particleOverlayOpacity: number = 1.0
   ) {
     this.program = program
     this.style = style
+    this.particleOverlayOpacity = particleOverlayOpacity
     this.positionBuffer = null
     this.texCoordBuffer = null
     this.vertexArray = null
@@ -142,6 +145,13 @@ export class FinalRenderer {
     // Uniform to set the render style, its values correspond to the values
     // of the StreamlineStyle enum.
     gl.uniform1i(this.program.getUniformLocation('u_style'), this.style)
+
+    // Uniform to control the opacity of the particle overlay (used by
+    // LightParticlesOnMagnitude and DarkParticlesOnMagnitude styles).
+    gl.uniform1f(
+      this.program.getUniformLocation('u_particle_opacity'),
+      this.particleOverlayOpacity
+    )
 
     // Uniforms for the start and end of the colormap.
     gl.uniform1f(

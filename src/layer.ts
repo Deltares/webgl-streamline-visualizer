@@ -37,6 +37,7 @@ export interface WMSStreamlineLayerOptions {
   spriteUrl?: URL
   trailParticleOptions?: TrailParticleOptions
   transformRequest?: TransformRequestFunction
+  particleOverlayOpacity?: number
 }
 
 function convertMapBoundsToEpsg3857BoundingBox(
@@ -549,7 +550,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       speedExponent: options.speedExponent,
       particleColor: options.particleColor,
       spriteUrl: options.spriteUrl,
-      trailParticleOptions: options.trailParticleOptions
+      trailParticleOptions: options.trailParticleOptions,
+      particleOverlayOpacity: options.particleOverlayOpacity
     }
   }
 }
