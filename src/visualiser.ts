@@ -628,7 +628,7 @@ export class StreamlineVisualiser {
       context.fillStyle = particleColor
       context.fill()
     } else {
-      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio
+      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio //NOSONAR(S7766) - Keep similarity to line below
       const relativeHeight = aspectRatio <= 1 ? 1 : 1 / aspectRatio
       const width = relativeWidth * this.particleTextureSize
       const height = relativeHeight * this.particleTextureSize
