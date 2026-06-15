@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import viteGlslPlugin from 'vite-plugin-glsl'
 import rollupPluginTypescript from '@rollup/plugin-typescript'

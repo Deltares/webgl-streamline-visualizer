@@ -8,7 +8,7 @@ export class ParticleRenderer {
   public maxAge: number
   public growthRate: number
 
-  private program: ShaderProgram
+  private readonly program: ShaderProgram
   private width: number
   private height: number
   private numParticles: number
@@ -20,7 +20,7 @@ export class ParticleRenderer {
   private vertexArray: WebGLVertexArrayObject | null
   private widthParticleDataTexture: number
   private heightParticleDataTexture: number
-  private isSpriteRenderer: boolean
+  private readonly isSpriteRenderer: boolean
   private doRotateParticles: boolean
 
   constructor(
@@ -260,7 +260,7 @@ export class ParticleRenderer {
     // Properties of the texture used to render the particle sprites; rescale
     // particle size to clip coordinates. Also take into account display
     // scaling so particles are not tiny on UHD-screens...
-    const scalingFactor = window.devicePixelRatio ?? 1
+    const scalingFactor = globalThis.devicePixelRatio ?? 1
     const particleSizeClipCoords =
       (this.particleSize * scalingFactor) / this.width
     gl.uniform1f(

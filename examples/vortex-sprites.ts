@@ -13,7 +13,7 @@ const options: StreamlineVisualiserOptions = {
   maxDisplacement: 1,
   maxAge: 2,
   growthRate: 1,
-  spriteUrl: new URL(spriteUrl, window.location.origin)
+  spriteUrl: new URL(spriteUrl, globalThis.location.origin)
 }
 
 initialiseVisualiser(numParticles, options)

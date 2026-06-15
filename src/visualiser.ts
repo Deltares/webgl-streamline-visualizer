@@ -63,7 +63,7 @@ export class StreamlineVisualiser {
   private readonly MAX_NUM_SUBSTEPS = 32
   private readonly DEFAULT_GROWTH_RATE = 5
 
-  private gl: WebGL2RenderingContext
+  private readonly gl: WebGL2RenderingContext
   private width: number
   private height: number
   private isRendering: boolean
@@ -131,7 +131,7 @@ export class StreamlineVisualiser {
   private get particleTextureSize(): number {
     // Final particle size in pixels depends on the display scaling, so take
     // this into account to create the particle texture.
-    const scalingFactor = window.devicePixelRatio ?? 1
+    const scalingFactor = globalThis.devicePixelRatio ?? 1
     return Math.ceil(2 * scalingFactor * this.options.particleSize)
   }
 
@@ -628,7 +628,7 @@ export class StreamlineVisualiser {
       context.fillStyle = particleColor
       context.fill()
     } else {
-      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio
+      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio //NOSONAR(S7766) - Keep similarity to line below
       const relativeHeight = aspectRatio <= 1 ? 1 : 1 / aspectRatio
       const width = relativeWidth * this.particleTextureSize
       const height = relativeHeight * this.particleTextureSize

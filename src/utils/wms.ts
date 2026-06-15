@@ -8,7 +8,7 @@ export type TransformRequestFunction = (request: Request) => Promise<Request>
 
 export class VelocityImage {
   constructor(
-    private data: Uint8Array | Uint8ClampedArray,
+    private readonly data: Uint8Array | Uint8ClampedArray,
     readonly width: number,
     readonly height: number,
     readonly uOffset: number,
@@ -101,11 +101,11 @@ export async function fetchWMSAvailableTimesAndElevations(
 
   const lowerElevation = layer.elevation?.lowerValue
   const upperElevation = layer.elevation?.upperValue
-  const elevationBounds = (
+  const elevationBounds: [number, number] | null = (
     lowerElevation !== undefined && upperElevation !== undefined
       ? [+lowerElevation, +upperElevation]
       : null
-  ) as [number, number] | null
+  )
 
   return {
     times: layer.times,

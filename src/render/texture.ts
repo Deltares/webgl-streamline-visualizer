@@ -2,7 +2,7 @@ import { createRectangleVertexArray } from '../utils/geometry'
 import { ShaderProgram, bindTexture } from '../utils/shader-program'
 
 export class TextureRenderer {
-  private program: ShaderProgram
+  private readonly program: ShaderProgram
   private positionBuffer: WebGLBuffer | null
   private texCoordBuffer: WebGLBuffer | null
   private vertexArray: WebGLVertexArrayObject | null

@@ -35,14 +35,14 @@ export class FewsWmsOptionsControl extends HTMLElement {
   private availableLayers: Layer[]
   private layerChangeCallback: LayerChangeCallback | null
 
-  private container: HTMLDivElement
-  private controlContainer: HTMLDivElement
+  private readonly container: HTMLDivElement
+  private readonly controlContainer: HTMLDivElement
 
-  private baseUrlInput: HTMLInputElement
-  private layerSelect: HTMLSelectElement
-  private styleSelect: HTMLSelectElement
-  private timeSelect: HTMLSelectElement
-  private elevationInput: HTMLInputElement
+  private readonly baseUrlInput: HTMLInputElement
+  private readonly layerSelect: HTMLSelectElement
+  private readonly styleSelect: HTMLSelectElement
+  private readonly timeSelect: HTMLSelectElement
+  private readonly elevationInput: HTMLInputElement
 
   constructor() {
     super()
@@ -114,7 +114,7 @@ export class FewsWmsOptionsControl extends HTMLElement {
   private createSelectControl(placeholder: string): HTMLSelectElement {
     const el = document.createElement('select')
     el.disabled = true
-    el.setAttribute('data-placeholder', placeholder)
+    el.dataset['placeholder'] = placeholder
 
     const placeholderOption = document.createElement('option')
     placeholderOption.textContent = placeholder
@@ -280,53 +280,63 @@ export class FewsWmsOptionsControl extends HTMLElement {
     // Initialise layer.
     this.layer
       .setWmsLayer(this.baseUrlInput.value, this.layerSelect.value)
-      .then(() => {
-        if (this.layerChangeCallback) {
-          const fewsOptions = layer.defaultSettings
-          const isWaveCrest = fewsOptions?.particleType === 'wave-crest'
-          const defaultNumParticles = 1000
-          const defaultParticleSize = isWaveCrest ? 12 : 3
-          const defaultSpeedFactor = isWaveCrest ? 0.02 : 0.2
-          const defaultFadeAmountPerSecond = isWaveCrest ? 3 : 0.1
-          const defaultSpeedExponent = 1
-          const defaultMaxAge = isWaveCrest ? 10 : 2
-          const defaultGrowthRate = isWaveCrest ? 1 : undefined
-          const options: Partial<StreamlineVisualiserOptions> = {
-            style: fewsOptions?.coloredParticles
-              ? StreamlineStyle.MagnitudeColoredParticles
-              : StreamlineStyle.ColoredParticles,
-            particleSize: fewsOptions?.particleSize ?? defaultParticleSize,
-            speedFactor: fewsOptions?.speedFactor ?? defaultSpeedFactor,
-            fadeAmountPerSecond:
-              fewsOptions?.fadeAmount ?? defaultFadeAmountPerSecond,
-            speedExponent: fewsOptions?.speedExponent ?? defaultSpeedExponent,
-            particleColor: fewsOptions?.particleColor
-              ? `#${fewsOptions?.particleColor}`
-              : undefined,
-            maxAge: fewsOptions?.maximumParticleAge ?? defaultMaxAge,
-            spriteUrl:
-              fewsOptions?.particleType === 'wave-crest'
-                ? new URL(waveCrestUrl)
-                : undefined,
-            growthRate: defaultGrowthRate
-          }
-          const numParticles =
-            fewsOptions?.numberOfParticles ?? defaultNumParticles
-
-          try {
-            this.layerChangeCallback(numParticles, options)
-          } catch (error) {
-            console.error(
-              `Layer change callback failed: ${(error as Error).toString()}`
-            )
-          }
-        }
-      })
+      .then(() => this.applyDefaultLayerSettings(layer))
       .catch(error =>
         console.error(
           `Failed to initialise streamlines layer: ${(error as Error).toString()}`
         )
       )
+  }
+
+  private applyDefaultLayerSettings(layer: Layer): void {
+    if (!this.layerChangeCallback) return
+
+    const { numParticles, options } =
+      this.createVisualiserDefaults(layer.defaultSettings)
+
+    try {
+      this.layerChangeCallback(numParticles, options)
+    } catch (error) {
+      console.error(`Layer change callback failed: ${(error as Error).toString()}`)
+    }
+  }
+
+  private createVisualiserDefaults(
+    fewsOptions: FewsAnimatedVectorSettings
+  ): {
+    numParticles: number
+    options: Partial<StreamlineVisualiserOptions>
+  } {
+    const isWaveCrest = fewsOptions?.particleType === 'wave-crest'
+    const defaultNumParticles = 1000
+    const defaultParticleSize = isWaveCrest ? 12 : 3
+    const defaultSpeedFactor = isWaveCrest ? 0.02 : 0.2
+    const defaultFadeAmountPerSecond = isWaveCrest ? 3 : 0.1
+    const defaultSpeedExponent = 1
+    const defaultMaxAge = isWaveCrest ? 10 : 2
+    const defaultGrowthRate = isWaveCrest ? 1 : undefined
+
+    const options: Partial<StreamlineVisualiserOptions> = {
+      style: fewsOptions?.coloredParticles
+        ? StreamlineStyle.MagnitudeColoredParticles
+        : StreamlineStyle.ColoredParticles,
+      particleSize: fewsOptions?.particleSize ?? defaultParticleSize,
+      speedFactor: fewsOptions?.speedFactor ?? defaultSpeedFactor,
+      fadeAmountPerSecond: fewsOptions?.fadeAmount ?? defaultFadeAmountPerSecond,
+      speedExponent: fewsOptions?.speedExponent ?? defaultSpeedExponent,
+      particleColor: fewsOptions?.particleColor
+        ? `#${fewsOptions?.particleColor}`
+        : undefined,
+      maxAge: fewsOptions?.maximumParticleAge ?? defaultMaxAge,
+      spriteUrl:
+        fewsOptions?.particleType === 'wave-crest'
+          ? new URL(waveCrestUrl)
+          : undefined,
+      growthRate: defaultGrowthRate
+    }
+
+    const numParticles = fewsOptions?.numberOfParticles ?? defaultNumParticles
+    return { numParticles, options }
   }
 
   private selectStyle(): void {
@@ -353,8 +363,8 @@ export class FewsWmsOptionsControl extends HTMLElement {
   private selectElevation(): void {
     if (!this.layer) throw new Error('No attached layer.')
 
-    const elevation = parseFloat(this.elevationInput.value)
-    if (isNaN(elevation)) return
+    const elevation = Number.parseFloat(this.elevationInput.value)
+    if (Number.isNaN(elevation)) return
 
     this.layer
       .setElevation(elevation)
@@ -367,7 +377,7 @@ export class FewsWmsOptionsControl extends HTMLElement {
 
   private disableControls(): void {
     const restorePlaceholder = (el: HTMLSelectElement) => {
-      el.innerHTML = `<option>${el.getAttribute('data-placeholder')}</option>`
+      el.innerHTML = `<option>${el.dataset['placeholder']}</option>`
     }
     restorePlaceholder(this.layerSelect)
     restorePlaceholder(this.styleSelect)
