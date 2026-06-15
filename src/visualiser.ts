@@ -465,7 +465,7 @@ export class StreamlineVisualiser {
       const fadeAmountMin = 1 / 255
       if (fadeAmount < fadeAmountMin) {
         const fadeProbability = fadeAmount / fadeAmountMin
-        fadeAmount = Math.random() < fadeProbability ? fadeAmountMin : 0
+        fadeAmount = Math.random() < fadeProbability ? fadeAmountMin : 0 // NOSONAR(S2245) - Non-cryptographic random used for visual effect
       }
       this.textureRenderer.render(this.previousParticleTexture, fadeAmount)
 
