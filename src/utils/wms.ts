@@ -101,11 +101,11 @@ export async function fetchWMSAvailableTimesAndElevations(
 
   const lowerElevation = layer.elevation?.lowerValue
   const upperElevation = layer.elevation?.upperValue
-  const elevationBounds = (
+  const elevationBounds: [number, number] | null = (
     lowerElevation !== undefined && upperElevation !== undefined
       ? [+lowerElevation, +upperElevation]
       : null
-  ) as [number, number] | null
+  )
 
   return {
     times: layer.times,
