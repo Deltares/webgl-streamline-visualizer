@@ -280,53 +280,63 @@ export class FewsWmsOptionsControl extends HTMLElement {
     // Initialise layer.
     this.layer
       .setWmsLayer(this.baseUrlInput.value, this.layerSelect.value)
-      .then(() => {
-        if (this.layerChangeCallback) {
-          const fewsOptions = layer.defaultSettings
-          const isWaveCrest = fewsOptions?.particleType === 'wave-crest'
-          const defaultNumParticles = 1000
-          const defaultParticleSize = isWaveCrest ? 12 : 3
-          const defaultSpeedFactor = isWaveCrest ? 0.02 : 0.2
-          const defaultFadeAmountPerSecond = isWaveCrest ? 3 : 0.1
-          const defaultSpeedExponent = 1
-          const defaultMaxAge = isWaveCrest ? 10 : 2
-          const defaultGrowthRate = isWaveCrest ? 1 : undefined
-          const options: Partial<StreamlineVisualiserOptions> = {
-            style: fewsOptions?.coloredParticles
-              ? StreamlineStyle.MagnitudeColoredParticles
-              : StreamlineStyle.ColoredParticles,
-            particleSize: fewsOptions?.particleSize ?? defaultParticleSize,
-            speedFactor: fewsOptions?.speedFactor ?? defaultSpeedFactor,
-            fadeAmountPerSecond:
-              fewsOptions?.fadeAmount ?? defaultFadeAmountPerSecond,
-            speedExponent: fewsOptions?.speedExponent ?? defaultSpeedExponent,
-            particleColor: fewsOptions?.particleColor
-              ? `#${fewsOptions?.particleColor}`
-              : undefined,
-            maxAge: fewsOptions?.maximumParticleAge ?? defaultMaxAge,
-            spriteUrl:
-              fewsOptions?.particleType === 'wave-crest'
-                ? new URL(waveCrestUrl)
-                : undefined,
-            growthRate: defaultGrowthRate
-          }
-          const numParticles =
-            fewsOptions?.numberOfParticles ?? defaultNumParticles
-
-          try {
-            this.layerChangeCallback(numParticles, options)
-          } catch (error) {
-            console.error(
-              `Layer change callback failed: ${(error as Error).toString()}`
-            )
-          }
-        }
-      })
+      .then(() => this.applyDefaultLayerSettings(layer))
       .catch(error =>
         console.error(
           `Failed to initialise streamlines layer: ${(error as Error).toString()}`
         )
       )
+  }
+
+  private applyDefaultLayerSettings(layer: Layer): void {
+    if (!this.layerChangeCallback) return
+
+    const { numParticles, options } =
+      this.createVisualiserDefaults(layer.defaultSettings)
+
+    try {
+      this.layerChangeCallback(numParticles, options)
+    } catch (error) {
+      console.error(`Layer change callback failed: ${(error as Error).toString()}`)
+    }
+  }
+
+  private createVisualiserDefaults(
+    fewsOptions: FewsAnimatedVectorSettings
+  ): {
+    numParticles: number
+    options: Partial<StreamlineVisualiserOptions>
+  } {
+    const isWaveCrest = fewsOptions?.particleType === 'wave-crest'
+    const defaultNumParticles = 1000
+    const defaultParticleSize = isWaveCrest ? 12 : 3
+    const defaultSpeedFactor = isWaveCrest ? 0.02 : 0.2
+    const defaultFadeAmountPerSecond = isWaveCrest ? 3 : 0.1
+    const defaultSpeedExponent = 1
+    const defaultMaxAge = isWaveCrest ? 10 : 2
+    const defaultGrowthRate = isWaveCrest ? 1 : undefined
+
+    const options: Partial<StreamlineVisualiserOptions> = {
+      style: fewsOptions?.coloredParticles
+        ? StreamlineStyle.MagnitudeColoredParticles
+        : StreamlineStyle.ColoredParticles,
+      particleSize: fewsOptions?.particleSize ?? defaultParticleSize,
+      speedFactor: fewsOptions?.speedFactor ?? defaultSpeedFactor,
+      fadeAmountPerSecond: fewsOptions?.fadeAmount ?? defaultFadeAmountPerSecond,
+      speedExponent: fewsOptions?.speedExponent ?? defaultSpeedExponent,
+      particleColor: fewsOptions?.particleColor
+        ? `#${fewsOptions?.particleColor}`
+        : undefined,
+      maxAge: fewsOptions?.maximumParticleAge ?? defaultMaxAge,
+      spriteUrl:
+        fewsOptions?.particleType === 'wave-crest'
+          ? new URL(waveCrestUrl)
+          : undefined,
+      growthRate: defaultGrowthRate
+    }
+
+    const numParticles = fewsOptions?.numberOfParticles ?? defaultNumParticles
+    return { numParticles, options }
   }
 
   private selectStyle(): void {
