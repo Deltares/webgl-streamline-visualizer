@@ -35,14 +35,14 @@ export class FewsWmsOptionsControl extends HTMLElement {
   private availableLayers: Layer[]
   private layerChangeCallback: LayerChangeCallback | null
 
-  private container: HTMLDivElement
-  private controlContainer: HTMLDivElement
+  private readonly container: HTMLDivElement
+  private readonly controlContainer: HTMLDivElement
 
-  private baseUrlInput: HTMLInputElement
-  private layerSelect: HTMLSelectElement
-  private styleSelect: HTMLSelectElement
-  private timeSelect: HTMLSelectElement
-  private elevationInput: HTMLInputElement
+  private readonly baseUrlInput: HTMLInputElement
+  private readonly layerSelect: HTMLSelectElement
+  private readonly styleSelect: HTMLSelectElement
+  private readonly timeSelect: HTMLSelectElement
+  private readonly elevationInput: HTMLInputElement
 
   constructor() {
     super()

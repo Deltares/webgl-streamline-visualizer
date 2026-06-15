@@ -9,11 +9,11 @@ export class ShaderProgram {
   readonly gl: WebGL2RenderingContext
   readonly program: WebGLProgram
 
-  private vertexShader: VertexShader
-  private fragmentShader: FragmentShader
+  private readonly vertexShader: VertexShader
+  private readonly fragmentShader: FragmentShader
   private isLinked: boolean
-  private attributes: Map<string, number>
-  private uniforms: Map<string, WebGLUniformLocation>
+  private readonly attributes: Map<string, number>
+  private readonly uniforms: Map<string, WebGLUniformLocation>
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -210,7 +210,7 @@ export class ShaderProgram {
  */
 export function createAndFillStaticBuffer(
   gl: WebGL2RenderingContext,
-  data: AllowSharedBufferSource 
+  data: AllowSharedBufferSource
 ): WebGLBuffer {
   const buffer = gl.createBuffer()
   if (buffer === null) {

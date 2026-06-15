@@ -22,7 +22,7 @@ export class FinalRenderer {
 
   public style: StreamlineStyle
 
-  private program: ShaderProgram
+  private readonly program: ShaderProgram
   private positionBuffer: WebGLBuffer | null
   private texCoordBuffer: WebGLBuffer | null
   private vertexArray: WebGLVertexArrayObject | null

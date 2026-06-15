@@ -7,7 +7,7 @@ import {
 import { VelocityImage } from '../utils/wms'
 
 export class ParticleBuffers {
-  private gl: WebGL2RenderingContext
+  private readonly gl: WebGL2RenderingContext
   readonly data: WebGLBuffer
   readonly age: WebGLBuffer
 
@@ -59,7 +59,7 @@ export class ParticleBuffers {
 }
 
 export class ParticlePropagator {
-  private program: ShaderProgram
+  private readonly program: ShaderProgram
   private width: number
   private height: number
   private numParticles: number

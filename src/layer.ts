@@ -63,12 +63,12 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   public readonly renderingMode = '2d'
   public readonly type = 'custom'
 
-  private _id: string
+  private readonly _id: string
 
   private map: Map | null
   private gl: WebGL2RenderingContext | null
 
-  private options: WMSStreamlineLayerOptions
+  private readonly options: WMSStreamlineLayerOptions
   private _visualiser: StreamlineVisualiser | null
   private previousFrameTime: DOMHighResTimeStamp | null
 
@@ -82,18 +82,18 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   private colorScaleRange: [number, number] | null
 
   private isInitialised: boolean
-  private abortController: AbortController
+  private readonly abortController: AbortController
 
   private onLayerAdd: (() => void) | null
   private onStartLoading: (() => void) | null
   private onEndLoading: (() => void) | null
   // Pause rendering during map resizes; rendering will be continued by the
   // newly fetched velocity field.
-  private onResizeStart = () => this._visualiser?.stop()
+  private readonly onResizeStart = () => this._visualiser?.stop()
   // Map moveend events are fired during resize animations, so we debounce the
   // callback to prevent too many velocity field updates from happening.
-  private debouncedOnMapMoveEnd = debounce(() => this.onMapMoveEnd(), 100)
-  private onMapMoveStart = () => this.debouncedOnMapMoveEnd.cancel()
+  private readonly debouncedOnMapMoveEnd = debounce(() => this.onMapMoveEnd(), 100)
+  private readonly onMapMoveStart = () => this.debouncedOnMapMoveEnd.cancel()
 
   constructor(id: string, options: WMSStreamlineLayerOptions) {
     this._id = id

@@ -63,7 +63,7 @@ export class StreamlineVisualiser {
   private readonly MAX_NUM_SUBSTEPS = 32
   private readonly DEFAULT_GROWTH_RATE = 5
 
-  private gl: WebGL2RenderingContext
+  private readonly gl: WebGL2RenderingContext
   private width: number
   private height: number
   private isRendering: boolean

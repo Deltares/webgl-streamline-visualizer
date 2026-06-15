@@ -8,7 +8,7 @@ export class ParticleRenderer {
   public maxAge: number
   public growthRate: number
 
-  private program: ShaderProgram
+  private readonly program: ShaderProgram
   private width: number
   private height: number
   private numParticles: number
@@ -20,7 +20,7 @@ export class ParticleRenderer {
   private vertexArray: WebGLVertexArrayObject | null
   private widthParticleDataTexture: number
   private heightParticleDataTexture: number
-  private isSpriteRenderer: boolean
+  private readonly isSpriteRenderer: boolean
   private doRotateParticles: boolean
 
   constructor(

@@ -2,9 +2,9 @@
  * Speed curve of the form factor * speed ^ exponent.
  */
 export class SpeedCurve {
-  private _exponent: number
-  private _factor: number
-  private _baseFactor: number
+  private readonly _exponent: number
+  private readonly _factor: number
+  private readonly _baseFactor: number
 
   constructor(exponent: number, factor: number, baseFactor: number) {
     this._exponent = exponent

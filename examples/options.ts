@@ -10,10 +10,10 @@ import {
 import waveCrestUrl from './wave.svg'
 
 export class VisualiserOptionsControl extends HTMLElement {
-  private container: HTMLDivElement
+  private readonly container: HTMLDivElement
   private visualiser: StreamlineVisualiser | null = null
-  private onNumParticleChangeCallbacks: ((numParticles: number) => void)[] = []
-  private onOptionsChangeCallbacks: ((
+  private readonly onNumParticleChangeCallbacks: ((numParticles: number) => void)[] = []
+  private readonly onOptionsChangeCallbacks: ((
     options: Partial<StreamlineVisualiserOptions>
   ) => void)[] = []
 
