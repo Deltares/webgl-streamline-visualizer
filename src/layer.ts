@@ -273,6 +273,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     const colormap = await fetchWMSColormap(
       this.options.baseUrl,
       this.options.layer,
+      this.options.style,
       colorScaleRange,
       this.signal,
       this.options.transformRequest
@@ -320,7 +321,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
   async setStyle(style: string): Promise<void> {
     this.options.style = style
-    await this.updateVelocityField(false)
+    await this.updateColorMap()
   }
 
   async setTime(time: Date): Promise<void> {
@@ -374,19 +375,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     }
 
     this.colorScaleRange = colorScaleRange
-
-    // Update colormap and velocity field for new color scale range.
-    const colormap = await fetchWMSColormap(
-      this.options.baseUrl,
-      this.options.layer,
-      colorScaleRange ?? undefined,
-      this.signal,
-      this.options.transformRequest
-    )
-    this._visualiser?.setColorMap(colormap)
-
-    // Note that we do not need a velocity update, since the TIFF response from
-    // the WMS server does not depend on the color scale range.
+    await this.updateColorMap()
   }
 
   setNumParticles(numParticles: number): void {
@@ -440,6 +429,22 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
     this.updateVelocityField(doResetParticles).catch(() =>
       console.error('Failed to update velocity field.')
     )
+  }
+
+  private async updateColorMap() {
+    // Update colormap and velocity field for new color scale range.
+    const colormap = await fetchWMSColormap(
+      this.options.baseUrl,
+      this.options.layer,
+      this.options.style,
+      this.colorScaleRange ?? undefined,
+      this.signal,
+      this.options.transformRequest
+    )
+    this._visualiser?.setColorMap(colormap)
+
+    // Note that we do not need a velocity update, since the TIFF response from
+    // the WMS server does not depend on the color scale range.
   }
 
   private async updateVelocityField(doResetParticles: boolean): Promise<void> {

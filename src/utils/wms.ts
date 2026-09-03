@@ -48,6 +48,7 @@ export class VelocityImage {
 export async function fetchWMSColormap(
   baseUrl: string,
   layer: string,
+  style?: string,
   colorScaleRange?: [number, number],
   signal?: AbortSignal,
   transformRequest?: TransformRequestFunction
@@ -57,6 +58,9 @@ export async function fetchWMSColormap(
   url.searchParams.append('format', 'application/json')
   url.searchParams.append('version', '1.3')
   url.searchParams.append('layers', layer)
+  if (style) {
+    url.searchParams.append('style', style)
+  }
   if (colorScaleRange) {
     url.searchParams.append('colorScaleRange', `${colorScaleRange.join(',')}`)
   }
