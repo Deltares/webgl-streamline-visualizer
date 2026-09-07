@@ -497,6 +497,25 @@ export class StreamlineVisualiser {
     this.swapParticleTextures()
   }
 
+  /**
+   * Re-draws the final composite pass with the current scaling, without
+   * advancing particles. Use this to render world copies at different offsets:
+   * call setScaling() with the shifted bbox, then renderCopy().
+   *
+   * Must be called after renderFrame() in the same frame. Uses
+   * previousParticleTexture because renderFrame() swaps textures at the end.
+   */
+  renderCopy(): void {
+    if (!this.isRendering) return
+    if (!this.finalRenderer || !this.previousParticleTexture) return
+
+    this.finalRenderer.render(this.previousParticleTexture, this.scaling)
+
+    if (this.spriteRenderer) {
+      this.spriteRenderer.render(this.particlePropagator!.buffers, this.scaling)
+    }
+  }
+
   private async compileShaderPrograms(): Promise<
     [ShaderProgram, ShaderProgram, ShaderProgram, ShaderProgram]
   > {
