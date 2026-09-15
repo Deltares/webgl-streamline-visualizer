@@ -1,6 +1,6 @@
-import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
-import { playwright} from '@vitest/browser-playwright'
+import { playwright } from '@vitest/browser-playwright'
+import { resolve } from 'node:path'
 
 export default defineConfig({
   resolve: {
@@ -13,9 +13,8 @@ export default defineConfig({
       enabled: true,
       screenshotFailures: false,
       provider: playwright(),
-      instances: [ { browser: 'chromium' }],
+      instances: [{ browser: 'chromium' }],
       headless: true,
-      api: 5174
     }
   }
 })

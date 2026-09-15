@@ -1,7 +1,6 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import viteGlslPlugin from 'vite-plugin-glsl'
-import rollupPluginTypescript from '@rollup/plugin-typescript'
 
 function resolveRelativePath(relative: string): string {
   return resolve(__dirname, relative)
@@ -23,18 +22,10 @@ export default defineConfig({
       name: 'webgl-streamline-visualizer',
       fileName: 'webgl-streamline-visualizer'
     },
-    rollupOptions: {
+    rolldownOptions: {
       // Do not bundle MapLibre; applications using this streamlines library as a
       // map layer should already have it anyway.
-      external: ['maplibre-gl'],
-      plugins: [
-        rollupPluginTypescript({
-          allowImportingTsExtensions: false,
-          declaration: true,
-          declarationDir: resolveRelativePath('dist'),
-          rootDir: resolveRelativePath('src')
-        })
-      ]
+      external: ['maplibre-gl']
     }
   },
   resolve: {
