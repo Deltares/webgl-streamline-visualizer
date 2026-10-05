@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - run: npm ci npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts
+      - run: npm run patch-package
       - run: npm run build
       - run: npm publish

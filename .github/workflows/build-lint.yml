@@ -18,5 +18,6 @@ jobs:
           node-version: 24
           cache: 'npm'
       - run: npm ci --ignore-scripts
+      - run: npm run patch-package
       - run: npm run build
       - run: npm run lint
