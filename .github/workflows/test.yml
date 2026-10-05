@@ -1,22 +1,46 @@
 name: Run tests
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+
+env:
+  PLAYWRIGHT_BROWSERS: chromium
 
 jobs:
-  build-lint:
+  tests:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: lts/*
-          cache: 'npm'
-      - run: npm ci --ignore-scripts
-      - run: npx playwright install chromium
-      - run: npm run test-once
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Get Playwright version
+        run: |
+          echo "PLAYWRIGHT_VERSION=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}-${{ env.PLAYWRIGHT_BROWSERS }}
+
+      - name: Install Playwright browsers
+        run: ./node_modules/.bin/playwright install $PLAYWRIGHT_BROWSERS
+
+      - name: Install Playwright system dependencies
+        run: ./node_modules/.bin/playwright install-deps
+
+      - name: Run Playwright component tests
+        run: npm run test-once
