@@ -68,10 +68,7 @@ export class ParticleRenderer {
     const [positionBuffer, texCoordBuffer, vertexArray] =
       createRectangleVertexArray(
         this.program,
-        -0.5,
-        0.5,
-        -0.5,
-        0.5,
+        { xMin: -0.5, xMax: 0.5, yMin: -0.5, yMax: 0.5 },
         doFlipV,
         'a_position',
         'a_tex_coord'
