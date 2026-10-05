@@ -105,11 +105,10 @@ export async function fetchWMSAvailableTimesAndElevations(
 
   const lowerElevation = layer.elevation?.lowerValue
   const upperElevation = layer.elevation?.upperValue
-  const elevationBounds: [number, number] | null = (
+  const elevationBounds: [number, number] | null =
     lowerElevation !== undefined && upperElevation !== undefined
       ? [+lowerElevation, +upperElevation]
       : null
-  )
 
   return {
     times: layer.times,
@@ -181,29 +180,33 @@ export async function fetchGeoTiffVelocityField(
 
   const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer, signal)
   const image = await tiff.getImage()
-  const fileDirectory = image.getFileDirectory() as FewsGeoTiffMetadata
 
-  const expectedProperties: (keyof FewsGeoTiffMetadata)[] = [
-    'BitsPerSample',
-    'ImageWidth',
-    'ImageLength',
-    'ModelTiepoint',
-    'ModelPixelScale'
-  ]
-  const hasExpectedMetadata = expectedProperties.every(
-    property => property in fileDirectory
-  )
-  if (!hasExpectedMetadata) {
-    const propertiesString = expectedProperties
-      .map(property => `"${property}"`)
-      .join(', ')
+  const bitsPerSample = image.fileDirectory.getValue('BitsPerSample')
+  const imageWidth = image.fileDirectory.getValue('ImageWidth')
+  const imageLength = image.fileDirectory.getValue('ImageLength')
+  const modelTiepoint = image.fileDirectory.getValue('ModelTiepoint')
+  const modelPixelScale = image.fileDirectory.getValue('ModelPixelScale')
+
+  const modelPixelScaleX = modelPixelScale?.[0]
+  const modelPixelScaleY = modelPixelScale?.[1]
+  const modelTiepointX = modelTiepoint?.[0]
+  const modelTiepointY = modelTiepoint?.[1]
+
+  if (
+    bitsPerSample === undefined ||
+    imageWidth === undefined ||
+    imageLength === undefined ||
+    modelPixelScaleX === undefined ||
+    modelPixelScaleY === undefined ||
+    modelTiepointX === undefined ||
+    modelTiepointY === undefined
+  ) {
     throw new Error(
-      `GeoTIFF metadata does not contain all expected properties; need the following properties: ${propertiesString}`
+      'GeoTIFF metadata does not contain the required velocity field properties.'
     )
   }
 
-  // Assume we have 8-bit data per channel.
-  const isAllChannels8Bit = fileDirectory.BitsPerSample!.every(
+  const isAllChannels8Bit = bitsPerSample.every(
     (numBits: number) => numBits === 8
   )
   if (!isAllChannels8Bit) {
@@ -212,29 +215,27 @@ export async function fetchGeoTiffVelocityField(
     )
   }
 
-  // Get image data, it should always have unsigned 8-bit integers for each
-  // channel. For some mysterious reason, the GeoTIFF types say that this
-  // function produces a Int8Array, while in reality it produces a Uint8Array.
-  const dataUntyped = (await image.readRasters({ interleave: true })) as unknown
-  const data = dataUntyped as Uint8Array
-
-  // Get offsets and scales for the image. We multiply the scales by 255, since
-  // 255 of an unsigned 8-bit integer corresponds to a texture value of 1.0 in
-  // WebGL.
-  const receivedWidth = fileDirectory.ImageWidth!
-  const receivedHeight = fileDirectory.ImageLength!
-  const uOffset = fileDirectory.ModelTiepoint![0]
-  const uScale = fileDirectory.ModelPixelScale![0] * 255
-  const vOffset = fileDirectory.ModelTiepoint![1]
-  const vScale = fileDirectory.ModelPixelScale![1] * 255
+  let data
+  try {
+    const dataUntyped = await image.readRasters({ interleave: true })
+    data = dataUntyped as Uint8Array
+  } catch (error) {
+    console.error('[GeoTIFF] readRasters failed', {
+      error,
+      width: image.getWidth(),
+      height: image.getHeight(),
+      fileDirectory: image.getFileDirectory().toObject()
+    })
+    throw error
+  }
 
   return new VelocityImage(
     data,
-    receivedWidth,
-    receivedHeight,
-    uOffset,
-    vOffset,
-    uScale,
-    vScale
+    imageWidth,
+    imageLength,
+    modelTiepointX,
+    modelTiepointX,
+    modelPixelScaleX * 255,
+    modelPixelScaleY * 255
   )
 }
