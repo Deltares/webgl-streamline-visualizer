@@ -94,6 +94,12 @@ export class VisualiserOptionsControl extends HTMLElement {
       1,
       5
     )
+    const particleOverlayOpacityControl = this.createNumericOptionsControl(
+      'Particle overlay opacity',
+      'particleOverlayOpacity',
+      0.1,
+      1
+    )
     const aspectRatioControl = this.createTrailParticleAspectRatioControl()
     const doRotateParticlesControl = this.createTrailParticlesDoRotateControl()
     const trailParticleShapeControl = this.createTrailParticleShapeControl(
@@ -110,6 +116,7 @@ export class VisualiserOptionsControl extends HTMLElement {
     this.container.appendChild(maxAgeControl)
     this.container.appendChild(speedExponentControl)
     this.container.appendChild(growthRateControl)
+    this.container.appendChild(particleOverlayOpacityControl)
     this.container.appendChild(trailParticleShapeControl)
     this.container.appendChild(doRotateParticlesControl)
     this.container.appendChild(aspectRatioControl)
