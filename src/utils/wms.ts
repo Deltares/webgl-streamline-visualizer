@@ -6,6 +6,8 @@ import { createTexture } from './textures'
 
 export type TransformRequestFunction = (request: Request) => Promise<Request>
 
+const pool = new GeoTIFF.Pool()
+
 export class VelocityImage {
   constructor(
     private readonly data: Uint8Array | Uint8ClampedArray,
@@ -217,7 +219,7 @@ export async function fetchGeoTiffVelocityField(
 
   let data
   try {
-    const dataUntyped = await image.readRasters({ interleave: true })
+    const dataUntyped = await image.readRasters({ interleave: true, pool })
     data = dataUntyped as Uint8Array
   } catch (error) {
     console.error('[GeoTIFF] readRasters failed', {
