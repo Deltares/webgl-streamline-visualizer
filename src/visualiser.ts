@@ -186,20 +186,19 @@ export class StreamlineVisualiser {
       speedCurve
     )
 
-    this.particleRenderer = new ParticleRenderer(
-      programRenderParticles,
-      this.width,
-      this.height,
-      this._numParticles,
-      this._options.particleSize,
+    this.particleRenderer = new ParticleRenderer(programRenderParticles, {
+      width: this.width,
+      height: this.height,
+      numParticles: this._numParticles,
+      particleSize: this._options.particleSize,
       particleTexture,
-      this.widthParticleDataTexture,
-      this.heightParticleDataTexture,
-      false,
-      this._options.maxAge,
-      this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
-      determineDoRotateParticles(this._options)
-    )
+      widthParticleDataTexture: this.widthParticleDataTexture,
+      heightParticleDataTexture: this.heightParticleDataTexture,
+      isSpriteRenderer: false,
+      maxAge: this._options.maxAge,
+      growthRate: this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+      doRotateParticles: determineDoRotateParticles(this._options)
+    })
     this.finalRenderer = new FinalRenderer(
       programRenderFinal,
       this._options.style,
@@ -215,20 +214,19 @@ export class StreamlineVisualiser {
     // the particle trail at the end of rendering every frame.
     if (this.options.spriteUrl) {
       const spriteTexture = await this.createSpriteTexture()
-      this.spriteRenderer = new ParticleRenderer(
-        programRenderParticles,
-        this.width,
-        this.height,
-        this._numParticles,
-        this._options.particleSize,
-        spriteTexture,
-        this.widthParticleDataTexture,
-        this.heightParticleDataTexture,
-        true,
-        this._options.maxAge,
-        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
-        true
-      )
+      this.spriteRenderer = new ParticleRenderer(programRenderParticles, {
+        width: this.width,
+        height: this.height,
+        numParticles: this._numParticles,
+        particleSize: this._options.particleSize,
+        particleTexture: spriteTexture,
+        widthParticleDataTexture: this.widthParticleDataTexture,
+        heightParticleDataTexture: this.heightParticleDataTexture,
+        isSpriteRenderer: true,
+        maxAge: this._options.maxAge,
+        growthRate: this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+        doRotateParticles: true
+      })
       this.spriteRenderer.initialise()
     }
 
@@ -363,17 +361,19 @@ export class StreamlineVisualiser {
       const spriteTexture = await this.createSpriteTexture()
       this.spriteRenderer = new ParticleRenderer(
         this.programRenderParticles,
-        this.width,
-        this.height,
-        this._numParticles,
-        this._options.particleSize,
-        spriteTexture,
-        this.widthParticleDataTexture,
-        this.heightParticleDataTexture,
-        true,
-        this._options.maxAge,
-        this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
-        true
+        {
+          width: this.width,
+          height: this.height,
+          numParticles: this._numParticles,
+          particleSize: this._options.particleSize,
+          particleTexture: spriteTexture,
+          widthParticleDataTexture: this.widthParticleDataTexture,
+          heightParticleDataTexture: this.heightParticleDataTexture,
+          isSpriteRenderer: true,
+          maxAge: this._options.maxAge,
+          growthRate: this._options.growthRate ?? this.DEFAULT_GROWTH_RATE,
+          doRotateParticles: true
+        }
       )
       this.spriteRenderer.initialise()
     } else if (

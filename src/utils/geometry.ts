@@ -4,16 +4,21 @@ import {
   createAndFillStaticBuffer
 } from './shader-program'
 
+export interface RectangleBounds {
+  xMin: number
+  xMax: number
+  yMin: number
+  yMax: number
+}
+
 export function createRectangleVertexArray(
   program: ShaderProgram,
-  xMin: number,
-  xMax: number,
-  yMin: number,
-  yMax: number,
+  bounds: RectangleBounds,
   doFlipV: boolean,
   positionAttribute: string,
   vertexCoordAttribute: string
 ): [WebGLBuffer, WebGLBuffer, WebGLVertexArrayObject] {
+  const { xMin, xMax, yMin, yMax } = bounds
   const gl = program.gl
   const vertexArray = gl.createVertexArray()
   if (vertexArray === null) {

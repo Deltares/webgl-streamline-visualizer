@@ -192,7 +192,7 @@ export class FewsWmsOptionsControl extends HTMLElement {
       const times = layer.times?.map(time => new Date(time)) ?? []
       const styles: WmsStyle[] =
         layer.styles?.map(style => ({
-          id: style.name!, // FIXME: why can "name" be undefined?
+          id: style.name ?? 'Missing style name in WMS response',
           title: style.title
         })) ?? []
       let elevationBounds: [number, number] | null = null

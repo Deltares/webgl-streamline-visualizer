@@ -3,6 +3,20 @@ import { ShaderProgram, bindTexture } from '../utils/shader-program'
 import type { BoundingBoxScaling } from './final'
 import type { ParticleBuffers } from './propagator'
 
+export interface ParticleRendererOptions {
+  width: number
+  height: number
+  numParticles: number
+  particleSize: number
+  particleTexture: WebGLTexture
+  widthParticleDataTexture: number
+  heightParticleDataTexture: number
+  isSpriteRenderer: boolean
+  maxAge: number
+  growthRate: number
+  doRotateParticles: boolean
+}
+
 export class ParticleRenderer {
   public particleSize: number
   public maxAge: number
@@ -23,41 +37,28 @@ export class ParticleRenderer {
   private readonly isSpriteRenderer: boolean
   private doRotateParticles: boolean
 
-  constructor(
-    program: ShaderProgram,
-    width: number,
-    height: number,
-    numParticles: number,
-    particleSize: number,
-    particleTexture: WebGLTexture,
-    widthParticleDataTexture: number,
-    heightParticleDataTexture: number,
-    isSpriteRenderer: boolean,
-    maxAge: number,
-    growthRate: number,
-    doRotateParticles: boolean
-  ) {
+  constructor(program: ShaderProgram, options: ParticleRendererOptions) {
     this.program = program
 
-    this.width = width
-    this.height = height
-    this.numParticles = numParticles
-    this.particleSize = particleSize
-    this.particleTexture = particleTexture
+    this.width = options.width
+    this.height = options.height
+    this.numParticles = options.numParticles
+    this.particleSize = options.particleSize
+    this.particleTexture = options.particleTexture
     this.particleDataTexture = null
     this.particleAgeTexture = null
-    this.widthParticleDataTexture = widthParticleDataTexture
-    this.heightParticleDataTexture = heightParticleDataTexture
+    this.widthParticleDataTexture = options.widthParticleDataTexture
+    this.heightParticleDataTexture = options.heightParticleDataTexture
 
-    this.maxAge = maxAge
-    this.growthRate = growthRate
+    this.maxAge = options.maxAge
+    this.growthRate = options.growthRate
 
     this.positionBuffer = null
     this.texCoordBuffer = null
     this.vertexArray = null
 
-    this.isSpriteRenderer = isSpriteRenderer
-    this.doRotateParticles = doRotateParticles
+    this.isSpriteRenderer = options.isSpriteRenderer
+    this.doRotateParticles = options.doRotateParticles
   }
 
   initialise(): void {
@@ -68,10 +69,7 @@ export class ParticleRenderer {
     const [positionBuffer, texCoordBuffer, vertexArray] =
       createRectangleVertexArray(
         this.program,
-        -0.5,
-        0.5,
-        -0.5,
-        0.5,
+        { xMin: -0.5, xMax: 0.5, yMin: -0.5, yMax: 0.5 },
         doFlipV,
         'a_position',
         'a_tex_coord'

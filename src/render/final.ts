@@ -58,10 +58,7 @@ export class FinalRenderer {
     const [positionBuffer, texCoordBuffer, vertexArray] =
       createRectangleVertexArray(
         this.program,
-        -1.0,
-        1.0,
-        -1.0,
-        1.0,
+        { xMin: -1.0, xMax: 1.0, yMin: -1.0, yMax: 1.0 },
         doFlipV,
         'a_position',
         'a_tex_coord'

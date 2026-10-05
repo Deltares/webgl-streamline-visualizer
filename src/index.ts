@@ -9,6 +9,7 @@ export {
 export {
   fetchWMSAvailableTimesAndElevations,
   fetchWMSColormap,
-  fetchWMSVelocityField
+  fetchWMSVelocityField,
+  type WMSVelocityFieldOptions
 } from './utils/wms'
 export { type BoundingBoxScaling } from './render/final'

@@ -126,20 +126,34 @@ export interface FewsGeoTiffMetadata {
   ModelPixelScale?: [number, number]
 }
 
+export interface WMSVelocityFieldOptions {
+  time: string
+  boundingBox: [number, number, number, number]
+  width: number
+  height: number
+  style?: string
+  useDisplayUnits?: boolean
+  useLastValue?: boolean
+  elevation?: number
+}
+
 export async function fetchWMSVelocityField(
   baseUrl: string,
   layer: string,
-  time: string,
-  boundingBox: [number, number, number, number],
-  width: number,
-  height: number,
-  style?: string,
-  useDisplayUnits?: boolean,
-  useLastValue?: boolean,
-  elevation?: number,
+  options: WMSVelocityFieldOptions,
   signal?: AbortSignal,
   transformRequest?: TransformRequestFunction
 ): Promise<VelocityImage> {
+  const {
+    time,
+    boundingBox,
+    width,
+    height,
+    style,
+    useDisplayUnits,
+    useLastValue,
+    elevation
+  } = options
   const url = new URL(baseUrl)
   url.searchParams.append('request', 'GetMap')
   url.searchParams.append('version', '1.3')
