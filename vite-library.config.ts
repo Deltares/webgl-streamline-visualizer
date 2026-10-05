@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import viteGlslPlugin from 'vite-plugin-glsl'
 
 function resolveRelativePath(relative: string): string {
-  return resolve(__dirname, relative)
+  return resolve(import.meta.dirname, relative)
 }
 
 export default defineConfig({
