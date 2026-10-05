@@ -44,8 +44,9 @@ function convertMapBoundsToEpsg3857BoundingBox(
 ): [number, number, number, number] {
   // Converts weird normalised EPSG:3857 to actual EPSG:3857.
   const toMercator = (coords: LngLat): [number, number] => {
-    // TODO: get magic number from Maplibre somehow; mercator
-    const mercatorWidth = 2 * 20037508.34
+    // EPSG:3857 uses the WGS 84 semi-major axis (6378137 m) as its sphere radius.
+    // World width is 2 * PI * radius; see https://epsg.io/3857.
+    const mercatorWidth = 2 * Math.PI * 6378137
     const mercNorm = MercatorCoordinate.fromLngLat(coords)
     const x = (mercNorm.x - 0.5) * mercatorWidth
     const y = (0.5 - mercNorm.y) * mercatorWidth
@@ -92,7 +93,10 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   private readonly onResizeStart = () => this._visualiser?.stop()
   // Map moveend events are fired during resize animations, so we debounce the
   // callback to prevent too many velocity field updates from happening.
-  private readonly debouncedOnMapMoveEnd = debounce(() => this.onMapMoveEnd(), 100)
+  private readonly debouncedOnMapMoveEnd = debounce(
+    () => this.onMapMoveEnd(),
+    100
+  )
   private readonly onMapMoveStart = () => this.debouncedOnMapMoveEnd.cancel()
 
   constructor(id: string, options: WMSStreamlineLayerOptions) {
