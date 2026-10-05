@@ -500,14 +500,16 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       const velocityImage = await fetchWMSVelocityField(
         this.options.baseUrl,
         this.options.layer,
-        this.time,
-        boundingBox,
-        widthWMS,
-        heightWMS,
-        this.options.style,
-        this.options.useDisplayUnits,
-        this.options.useLastValue,
-        this.elevation ?? undefined,
+        {
+          time: this.time,
+          boundingBox,
+          width: widthWMS,
+          height: heightWMS,
+          style: this.options.style,
+          useDisplayUnits: this.options.useDisplayUnits,
+          useLastValue: this.options.useLastValue,
+          elevation: this.elevation ?? undefined
+        },
         this.signal,
         this.options.transformRequest
       )
