@@ -250,7 +250,7 @@ export async function fetchGeoTiffVelocityField(
     imageWidth,
     imageLength,
     modelTiepointX,
-    modelTiepointX,
+    modelTiepointY,
     modelPixelScaleX * 255,
     modelPixelScaleY * 255
   )
