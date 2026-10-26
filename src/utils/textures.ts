@@ -50,17 +50,23 @@ export function createTexture(
 
     // Our data are specified as a typed array.
     gl.texStorage2D(gl.TEXTURE_2D, 1, internalFormat, width, height)
-    gl.texSubImage2D(
-      gl.TEXTURE_2D,
-      0, // level
-      0, // x-offset
-      0, // y-offset
-      width,
-      height,
-      format,
-      gl.UNSIGNED_BYTE,
-      data
-    )
+    const unpackAlignment: number = gl.getParameter(gl.UNPACK_ALIGNMENT)
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
+    try {
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0, // level
+        0, // x-offset
+        0, // y-offset
+        width,
+        height,
+        format,
+        gl.UNSIGNED_BYTE,
+        data
+      )
+    } finally {
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, unpackAlignment)
+    }
   } else {
     // Our data are specified as an ImageBitmap.
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, width, height)
