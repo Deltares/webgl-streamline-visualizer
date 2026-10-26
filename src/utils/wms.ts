@@ -122,8 +122,8 @@ export interface FewsGeoTiffMetadata {
   BitsPerSample?: number[]
   ImageWidth?: number
   ImageLength?: number
-  ModelTiepoint?: [number, number]
-  ModelPixelScale?: [number, number]
+  ModelTiepoint?: [number, number, number, number, number, number]
+  ModelPixelScale?: [number, number, number]
 }
 
 export interface WMSVelocityFieldOptions {
@@ -184,6 +184,11 @@ export async function fetchWMSVelocityField(
   return fetchGeoTiffVelocityField(url, signal, transformRequest)
 }
 
+/**
+ * Loads FEWS convertVectortoRG TIFFs, not arbitrary georeferenced rasters.
+ * ModelTiepoint stores velocity offsets and ModelPixelScale stores per-byte
+ * velocity increments; their remaining entries must be zero.
+ */
 export async function fetchGeoTiffVelocityField(
   url: URL,
   signal?: AbortSignal,
@@ -192,6 +197,11 @@ export async function fetchGeoTiffVelocityField(
   const request = new Request(url)
   const transformedRequest = (await transformRequest?.(request)) ?? request
   const response = await fetch(new Request(transformedRequest, { signal }))
+  if (!response.ok) {
+    throw new Error(
+      `Fetching velocity GeoTIFF failed: ${response.status} ${response.statusText}`
+    )
+  }
   const arrayBuffer = await response.arrayBuffer()
 
   const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer, signal)
@@ -200,8 +210,18 @@ export async function fetchGeoTiffVelocityField(
   const bitsPerSample = image.fileDirectory.getValue('BitsPerSample')
   const imageWidth = image.fileDirectory.getValue('ImageWidth')
   const imageLength = image.fileDirectory.getValue('ImageLength')
-  const modelTiepoint = image.fileDirectory.getValue('ModelTiepoint')
-  const modelPixelScale = image.fileDirectory.getValue('ModelPixelScale')
+  const [modelTiepoint, modelPixelScale, extraSamples, geoKeyDirectory, noDataTag] =
+    await Promise.all([
+      image.fileDirectory.loadValue('ModelTiepoint'),
+      image.fileDirectory.loadValue('ModelPixelScale'),
+      image.fileDirectory.loadValue('ExtraSamples'),
+      image.fileDirectory.loadValue('GeoKeyDirectory'),
+      image.fileDirectory.loadValue('GDAL_NODATA')
+    ])
+  const samplesPerPixel = image.fileDirectory.getValue('SamplesPerPixel')
+  const sampleFormat = image.fileDirectory.getValue('SampleFormat')
+  const photometricInterpretation =
+    image.fileDirectory.getValue('PhotometricInterpretation')
 
   const modelPixelScaleX = modelPixelScale?.[0]
   const modelPixelScaleY = modelPixelScale?.[1]
@@ -231,10 +251,68 @@ export async function fetchGeoTiffVelocityField(
     )
   }
 
-  let data
+  if (
+    (samplesPerPixel !== 3 && samplesPerPixel !== 4) ||
+    bitsPerSample.length !== samplesPerPixel ||
+    photometricInterpretation !== 2 ||
+    (sampleFormat !== undefined &&
+      (sampleFormat.length !== samplesPerPixel ||
+        !sampleFormat.every(format => format === 1))) ||
+    (samplesPerPixel === 3 && (extraSamples?.length ?? 0) !== 0) ||
+    (samplesPerPixel === 4 &&
+      (extraSamples?.length !== 1 || extraSamples[0] !== 2))
+  ) {
+    throw new Error(
+      'Expected FEWS unsigned 8-bit RGB velocity bands (R=U, G=V), optionally with unassociated alpha.'
+    )
+  }
+
+  if (
+    !Number.isInteger(imageWidth) ||
+    !Number.isInteger(imageLength) ||
+    imageWidth <= 0 ||
+    imageLength <= 0 ||
+    modelTiepoint?.length !== 6 ||
+    modelPixelScale?.length !== 3 ||
+    !modelTiepoint.every(Number.isFinite) ||
+    !modelPixelScale.every(Number.isFinite) ||
+    !modelTiepoint.slice(2).every(value => value === 0) ||
+    modelPixelScale[2] !== 0 ||
+    !Number.isFinite(modelPixelScaleX * 255 + modelTiepointX) ||
+    !Number.isFinite(modelPixelScaleY * 255 + modelTiepointY) ||
+    image.fileDirectory.hasTag('ModelTransformation') ||
+    (geoKeyDirectory !== undefined && geoKeyDirectory[3] !== 0)
+  ) {
+    throw new Error(
+      'Expected FEWS velocity offsets/scales, not spatial GeoTIFF georeferencing.'
+    )
+  }
+
+  const noData = noDataTag === undefined ? null : image.getGDALNoData()
+  if (
+    noDataTag !== undefined &&
+    (noData === null ||
+      !Number.isInteger(noData) ||
+      noData < 0 ||
+      noData > 255)
+  ) {
+    throw new Error('FEWS velocity NoData must be an unsigned 8-bit value.')
+  }
+
+  let data: Uint8Array
   try {
-    const dataUntyped = await image.readRasters({ interleave: true, pool })
-    data = dataUntyped as Uint8Array
+    const rasters = await image.readRasters({
+      interleave: true,
+      pool,
+      signal
+    })
+    if (
+      !(rasters instanceof Uint8Array) ||
+      rasters.length !== imageWidth * imageLength * samplesPerPixel
+    ) {
+      throw new Error('Decoded FEWS velocity raster has an invalid type or size.')
+    }
+    data = rasters
   } catch (error) {
     console.error('[GeoTIFF] readRasters failed', {
       error,
@@ -243,6 +321,16 @@ export async function fetchGeoTiffVelocityField(
       fileDirectory: image.getFileDirectory().toObject()
     })
     throw error
+  }
+
+  for (let i = 0; i < data.length; i += samplesPerPixel) {
+    const masked = samplesPerPixel === 4 && data[i + 3] === 0
+    const missing =
+      noData !== null && (data[i] === noData || data[i + 1] === noData)
+    if (masked || missing) {
+      data[i] = 255
+      data[i + 1] = 255
+    }
   }
 
   return new VelocityImage(

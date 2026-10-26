@@ -31,6 +31,24 @@ await layer.initialise()
 Refer to [`examples/maplibre_basic.ts`](examples/maplibre_basic.ts) for the full
 example.
 
+### Velocity TIFF encoding
+
+The TIFF loader accepts FEWS `GetMap` responses with `convertVectortoRG=true`,
+not arbitrary spatial GeoTIFFs. It requires unsigned 8-bit RGB bands with U in
+red and V in green, optionally followed by an unassociated alpha band
+(`ExtraSamples=2`). Premultiplied alpha and other band layouts are rejected.
+
+FEWS stores `[uOffset, vOffset, 0, 0, 0, 0]` in `ModelTiepoint` and
+`[uIncrement, vIncrement, 0]` in `ModelPixelScale`. Components are decoded as
+`byte * increment + offset`. These are velocity metadata, not standard spatial
+tiepoints or pixel sizes. Non-finite metadata, spatial tiepoints, transformation
+matrices, and non-empty spatial GeoKey directories are rejected.
+
+Pixels with both R and G equal to 255 are missing. Fully transparent pixels
+and pixels where either velocity band matches an explicitly declared
+`GDAL_NODATA` byte value are also treated as missing. Without that declaration,
+a single velocity band equal to 255 remains valid.
+
 ## Examples
 
 A hosted version of some of the examples can be found on the [GitHub Pages](https://deltares.github.io/webgl-streamline-visualizer/).
