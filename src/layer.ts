@@ -16,7 +16,7 @@ import {
   fetchWMSColormap,
   fetchWMSVelocityField
 } from '.'
-import type { TransformRequestFunction } from '@/utils/wms'
+import type { EnsembleSelection, TransformRequestFunction } from '@/utils/wms'
 
 export interface WMSStreamlineLayerOptions {
   baseUrl: string
@@ -81,6 +81,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
   private timeIndex: number
   private elevation: number | null
+  private ensembleSelection: EnsembleSelection | null
   private colorScaleRange: [number, number] | null
 
   private isInitialised: boolean
@@ -117,6 +118,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
     this.timeIndex = 0
     this.elevation = null
+    this.ensembleSelection = null
     this.colorScaleRange = null
 
     this.isInitialised = false
@@ -170,6 +172,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
     this.timeIndex = 0
     this.elevation = null
+    this.ensembleSelection = null
     this.colorScaleRange = null
 
     if (this.onLayerAdd) {
@@ -270,6 +273,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
   async initialise(
     time?: Date,
     elevation?: number,
+    ensembleSelection?: EnsembleSelection,
     colorScaleRange?: [number, number]
   ): Promise<void> {
     if (!this._visualiser || !this.map) throw new Error('Not added to a map.')
@@ -297,6 +301,7 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
 
     this.timeIndex = time ? this.findTimeIndex(time) : 0
     this.elevation = elevation ?? null
+    this.ensembleSelection = ensembleSelection ?? null
     this.colorScaleRange = colorScaleRange ?? null
 
     // Initialise and fetch first velocity field; this will also enable
@@ -362,6 +367,22 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
       this.elevation = elevation
     }
     // The velocity field update is abortable.
+    await this.updateVelocityField(true)
+  }
+
+  async setEnsembleSelection(
+    ensembleSelection: EnsembleSelection | null
+  ): Promise<void> {
+    // No change, do not update.
+    if (
+      ensembleSelection?.ensembleId === this.ensembleSelection?.ensembleId &&
+      ensembleSelection?.ensembleMemberId ===
+        this.ensembleSelection?.ensembleMemberId
+    ) {
+      return
+    }
+    this.ensembleSelection =
+      ensembleSelection === null ? null : { ...ensembleSelection }
     await this.updateVelocityField(true)
   }
 
@@ -509,7 +530,8 @@ export class WMSStreamlineLayer implements CustomLayerInterface {
           style: this.options.style,
           useDisplayUnits: this.options.useDisplayUnits,
           useLastValue: this.options.useLastValue,
-          elevation: this.elevation ?? undefined
+          elevation: this.elevation ?? undefined,
+          ensembleSelection: this.ensembleSelection ?? undefined
         },
         this.signal,
         this.options.transformRequest

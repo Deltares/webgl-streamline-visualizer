@@ -126,6 +126,11 @@ export interface FewsGeoTiffMetadata {
   ModelPixelScale?: [number, number, number]
 }
 
+export interface EnsembleSelection {
+  ensembleId: string
+  ensembleMemberId: string
+}
+
 export interface WMSVelocityFieldOptions {
   time: string
   boundingBox: [number, number, number, number]
@@ -135,6 +140,7 @@ export interface WMSVelocityFieldOptions {
   useDisplayUnits?: boolean
   useLastValue?: boolean
   elevation?: number
+  ensembleSelection?: EnsembleSelection
 }
 
 export async function fetchWMSVelocityField(
@@ -152,7 +158,8 @@ export async function fetchWMSVelocityField(
     style,
     useDisplayUnits,
     useLastValue,
-    elevation
+    elevation,
+    ensembleSelection
   } = options
   const url = new URL(baseUrl)
   url.searchParams.append('request', 'GetMap')
@@ -179,6 +186,10 @@ export async function fetchWMSVelocityField(
   }
   if (elevation) {
     url.searchParams.append('elevation', `${elevation}`)
+  }
+  if (ensembleSelection !== undefined) {
+    url.searchParams.append('ensembleId', ensembleSelection.ensembleId)
+    url.searchParams.append('ensembleMemberId', ensembleSelection.ensembleMemberId)
   }
 
   return fetchGeoTiffVelocityField(url, signal, transformRequest)
