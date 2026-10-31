@@ -81,6 +81,7 @@ export class StreamlineVisualiser {
   private scaling: BoundingBoxScaling
   private trailTexture: WebGLTexture | null
   private velocityImage: VelocityImage | null
+  private velocityTexture: WebGLTexture | null
   private colorMap: Colormap | null
   private dtMin: number
 
@@ -108,6 +109,7 @@ export class StreamlineVisualiser {
     this.scaling = { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 }
     this.trailTexture = null
     this.velocityImage = null
+    this.velocityTexture = null
     this.colorMap = null
     this.dtMin = 0
   }
@@ -255,6 +257,7 @@ export class StreamlineVisualiser {
     if (this.particleRenderer) this.particleRenderer.destruct(true)
     if (this.finalRenderer) this.finalRenderer.destruct()
     this.gl.deleteTexture(this.trailTexture)
+    this.gl.deleteTexture(this.velocityTexture)
   }
 
   setScaling(scaling: BoundingBoxScaling): void {
@@ -700,8 +703,15 @@ export class StreamlineVisualiser {
       throw new Error('Cannot set velocity image for uninitialised visualiser.')
     }
     this.velocityImage = velocityImage
-    this.particlePropagator.setVelocityImage(velocityImage)
-    this.finalRenderer.setVelocityImage(velocityImage)
+    // Upload the velocity image once and share the texture between the
+    // particle propagator and the final renderer.
+    this.gl.deleteTexture(this.velocityTexture)
+    this.velocityTexture = velocityImage.toTexture(this.gl, false)
+    this.particlePropagator.setVelocityImage(
+      velocityImage,
+      this.velocityTexture
+    )
+    this.finalRenderer.setVelocityImage(velocityImage, this.velocityTexture)
     this.dtMin = this.computeMinimumTimeStep()
   }
 
