@@ -6,11 +6,10 @@ import { StreamlineVisualiser } from '@/visualiser'
 import { createWebGl2Context, readTexture } from './utils'
 
 interface VisualiserInternals {
-  previousParticleTexture: WebGLTexture
-  currentParticleTexture: WebGLTexture
-  textureRenderer: {
-    previousFramebuffer: WebGLFramebuffer
-    currentFramebuffer: WebGLFramebuffer
+  trailTexture: WebGLTexture
+  fadeRenderer: {
+    framebuffer: WebGLFramebuffer
+    render(fadeAmount: number): void
   }
   particlePropagator: { velocityTexture: WebGLTexture }
   finalRenderer: { velocityTexture: WebGLTexture; colormapTexture: WebGLTexture }
@@ -61,24 +60,29 @@ function attachedTexture(
   return texture
 }
 
-test('setDimensions attaches the new trail textures to the framebuffers', async () => {
+function fillTrailTexture(
+  gl: WebGL2RenderingContext,
+  internals: VisualiserInternals,
+  color: [number, number, number, number]
+): void {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, internals.fadeRenderer.framebuffer)
+  gl.clearColor(...color)
+  gl.clear(gl.COLOR_BUFFER_BIT)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+}
+
+test('setDimensions attaches the new trail texture to the framebuffer', async () => {
   const gl = createWebGl2Context()
   const [visualiser, internals] = await createVisualiser(gl)
-  const oldTextures = [
-    internals.previousParticleTexture,
-    internals.currentParticleTexture
-  ]
+  const oldTexture = internals.trailTexture
 
   visualiser.setDimensions(32, 24)
   visualiser.setVelocityImage(createVelocityImage(32, 24), false)
 
-  expect(
-    attachedTexture(gl, internals.textureRenderer.previousFramebuffer)
-  ).toBe(internals.previousParticleTexture)
-  expect(attachedTexture(gl, internals.textureRenderer.currentFramebuffer)).toBe(
-    internals.currentParticleTexture
+  expect(attachedTexture(gl, internals.fadeRenderer.framebuffer)).toBe(
+    internals.trailTexture
   )
-  for (const texture of oldTextures) expect(gl.isTexture(texture)).toBe(false)
+  expect(gl.isTexture(oldTexture)).toBe(false)
 
   visualiser.start()
   visualiser.renderFrame(0.1)
@@ -106,48 +110,61 @@ test('replaced velocity and colormap textures are deleted', async () => {
   visualiser.destruct()
 })
 
-test('trail textures start cleared', async () => {
+test('the trail texture starts cleared', async () => {
   const gl = createWebGl2Context()
   const [visualiser, internals] = await createVisualiser(gl)
   visualiser.setDimensions(32, 24)
 
-  const zeros = new Uint8Array(32 * 24 * 4)
-  expect(readTexture(gl, internals.previousParticleTexture, 32, 24)).toEqual(
-    zeros
-  )
-  expect(readTexture(gl, internals.currentParticleTexture, 32, 24)).toEqual(
-    zeros
+  expect(readTexture(gl, internals.trailTexture, 32, 24)).toEqual(
+    new Uint8Array(32 * 24 * 4)
   )
   expect(gl.getError()).toBe(gl.NO_ERROR)
   visualiser.destruct()
 })
 
-test('resetting particles clears the trail textures in place', async () => {
+test('resetting particles clears the trail texture in place', async () => {
   const gl = createWebGl2Context()
   const [visualiser, internals] = await createVisualiser(gl)
-  const textures = [
-    internals.previousParticleTexture,
-    internals.currentParticleTexture
-  ]
-  // Paint both trail textures.
-  for (const framebuffer of [
-    internals.textureRenderer.previousFramebuffer,
-    internals.textureRenderer.currentFramebuffer
-  ]) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
-    gl.clearColor(1, 1, 1, 1)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-  }
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  const texture = internals.trailTexture
+  fillTrailTexture(gl, internals, [1, 1, 1, 1])
 
   visualiser.setVelocityImage(createVelocityImage(16, 16), true)
 
-  expect(internals.previousParticleTexture).toBe(textures[0])
-  expect(internals.currentParticleTexture).toBe(textures[1])
-  const zeros = new Uint8Array(16 * 16 * 4)
-  for (const texture of textures) {
-    expect(readTexture(gl, texture, 16, 16)).toEqual(zeros)
-  }
+  expect(internals.trailTexture).toBe(texture)
+  expect(readTexture(gl, texture, 16, 16)).toEqual(new Uint8Array(16 * 16 * 4))
+  expect(gl.getError()).toBe(gl.NO_ERROR)
+  visualiser.destruct()
+})
+
+test('fading decreases trail alpha in place and keeps its colour', async () => {
+  const gl = createWebGl2Context()
+  const [visualiser, internals] = await createVisualiser(gl)
+  fillTrailTexture(gl, internals, [1, 0.5, 0, 200 / 255])
+
+  internals.fadeRenderer.render(50 / 255)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  let pixels = readTexture(gl, internals.trailTexture, 16, 16)
+  expect(Array.from(pixels.subarray(0, 4))).toEqual([255, 128, 0, 150])
+  expect(new Set(pixels).size).toBe(4)
+
+  // Alpha is clamped to zero.
+  internals.fadeRenderer.render(1)
+  pixels = readTexture(gl, internals.trailTexture, 16, 16)
+  expect(Array.from(pixels.subarray(0, 4))).toEqual([255, 128, 0, 0])
+  expect(gl.isEnabled(gl.BLEND)).toBe(false)
+  expect(gl.getParameter(gl.BLEND_EQUATION_RGB)).toBe(gl.FUNC_ADD)
+  expect(gl.getError()).toBe(gl.NO_ERROR)
+  visualiser.destruct()
+})
+
+test('renderFrame renders without errors with substeps', async () => {
+  const gl = createWebGl2Context()
+  const [visualiser] = await createVisualiser(gl)
+  visualiser.start()
+  // The minimum time step is 1.25 s for this velocity field and size, so this
+  // results in 8 substeps.
+  visualiser.renderFrame(10)
+  visualiser.renderCopy()
   expect(gl.getError()).toBe(gl.NO_ERROR)
   visualiser.destruct()
 })
@@ -159,16 +176,12 @@ test('destruct deletes all textures and framebuffers', async () => {
     internals.particlePropagator.velocityTexture,
     internals.finalRenderer.velocityTexture,
     internals.finalRenderer.colormapTexture,
-    internals.previousParticleTexture,
-    internals.currentParticleTexture
+    internals.trailTexture
   ]
-  const framebuffers = [
-    internals.textureRenderer.previousFramebuffer,
-    internals.textureRenderer.currentFramebuffer
-  ]
+  const framebuffer = internals.fadeRenderer.framebuffer
 
   visualiser.destruct()
 
   for (const texture of textures) expect(gl.isTexture(texture)).toBe(false)
-  for (const fb of framebuffers) expect(gl.isFramebuffer(fb)).toBe(false)
+  expect(gl.isFramebuffer(framebuffer)).toBe(false)
 })
