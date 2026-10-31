@@ -18,8 +18,8 @@ import {
   ParticleRenderer,
   TextureRenderer
 } from './render'
-import { VelocityImage } from './utils/wms'
-import { Colormap } from './utils/colormap'
+import type { VelocityImage } from './utils/velocity-image'
+import type { Colormap } from './utils/colormap'
 import type { BoundingBoxScaling } from './render/final'
 import { FragmentShader, VertexShader } from './utils/shader'
 
