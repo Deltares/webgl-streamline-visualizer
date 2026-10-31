@@ -689,16 +689,10 @@ export class StreamlineVisualiser {
     return createTexture(this.gl, this.gl.LINEAR, bitmap, width, height)
   }
 
-  private createZeroTexture(): WebGLTexture {
-    // Create texture initialised to zeros.
-    const zeros = new Uint8Array(this.width * this.height * 4)
-    return createTexture(
-      this.gl,
-      this.gl.LINEAR,
-      zeros,
-      this.width,
-      this.height
-    )
+  private createTrailTexture(): WebGLTexture {
+    // Only allocate storage; the texture renderer clears it through its frame
+    // buffer, which avoids uploading a screen-sized array of zeros.
+    return createTexture(this.gl, this.gl.LINEAR, null, this.width, this.height)
   }
 
   private swapParticleTextures(): void {
@@ -713,17 +707,18 @@ export class StreamlineVisualiser {
   private resetParticles(): void {
     // Reset particle positions and ages.
     this.particlePropagator?.resetBuffers()
-    // Reset rendered particle textures.
-    this.resetParticleTextures()
+    // Clear rendered particle trails; the textures still have the right size.
+    this.textureRenderer?.clearParticleTextures()
   }
 
   private resetParticleTextures(): void {
-    // Replace the particle trail textures with new zero-initialised ones of the
-    // current size, and attach them to the texture renderer's frame buffers.
+    // Replace the particle trail textures with new ones of the current size,
+    // and attach them to the texture renderer's frame buffers, which clears
+    // them.
     this.gl.deleteTexture(this.previousParticleTexture)
     this.gl.deleteTexture(this.currentParticleTexture)
-    this.previousParticleTexture = this.createZeroTexture()
-    this.currentParticleTexture = this.createZeroTexture()
+    this.previousParticleTexture = this.createTrailTexture()
+    this.currentParticleTexture = this.createTrailTexture()
     this.textureRenderer?.resetParticleTextures(
       this.previousParticleTexture,
       this.currentParticleTexture

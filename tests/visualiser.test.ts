@@ -3,7 +3,7 @@ import { StreamlineStyle } from '@/render'
 import { Colormap } from '@/utils/colormap'
 import { VelocityImage } from '@/utils/velocity-image'
 import { StreamlineVisualiser } from '@/visualiser'
-import { createWebGl2Context } from './utils'
+import { createWebGl2Context, readTexture } from './utils'
 
 interface VisualiserInternals {
   previousParticleTexture: WebGLTexture
@@ -86,15 +86,13 @@ test('setDimensions attaches the new trail textures to the framebuffers', async 
   visualiser.destruct()
 })
 
-test('replaced velocity, colormap and trail textures are deleted', async () => {
+test('replaced velocity and colormap textures are deleted', async () => {
   const gl = createWebGl2Context()
   const [visualiser, internals] = await createVisualiser(gl)
   const oldTextures = [
     internals.particlePropagator.velocityTexture,
     internals.finalRenderer.velocityTexture,
-    internals.finalRenderer.colormapTexture,
-    internals.previousParticleTexture,
-    internals.currentParticleTexture
+    internals.finalRenderer.colormapTexture
   ]
 
   visualiser.setVelocityImage(createVelocityImage(16, 16), true)
@@ -104,6 +102,52 @@ test('replaced velocity, colormap and trail textures are deleted', async () => {
   expect(gl.isTexture(internals.particlePropagator.velocityTexture)).toBe(true)
   expect(gl.isTexture(internals.finalRenderer.velocityTexture)).toBe(true)
   expect(gl.isTexture(internals.finalRenderer.colormapTexture)).toBe(true)
+  expect(gl.getError()).toBe(gl.NO_ERROR)
+  visualiser.destruct()
+})
+
+test('trail textures start cleared', async () => {
+  const gl = createWebGl2Context()
+  const [visualiser, internals] = await createVisualiser(gl)
+  visualiser.setDimensions(32, 24)
+
+  const zeros = new Uint8Array(32 * 24 * 4)
+  expect(readTexture(gl, internals.previousParticleTexture, 32, 24)).toEqual(
+    zeros
+  )
+  expect(readTexture(gl, internals.currentParticleTexture, 32, 24)).toEqual(
+    zeros
+  )
+  expect(gl.getError()).toBe(gl.NO_ERROR)
+  visualiser.destruct()
+})
+
+test('resetting particles clears the trail textures in place', async () => {
+  const gl = createWebGl2Context()
+  const [visualiser, internals] = await createVisualiser(gl)
+  const textures = [
+    internals.previousParticleTexture,
+    internals.currentParticleTexture
+  ]
+  // Paint both trail textures.
+  for (const framebuffer of [
+    internals.textureRenderer.previousFramebuffer,
+    internals.textureRenderer.currentFramebuffer
+  ]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+    gl.clearColor(1, 1, 1, 1)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+
+  visualiser.setVelocityImage(createVelocityImage(16, 16), true)
+
+  expect(internals.previousParticleTexture).toBe(textures[0])
+  expect(internals.currentParticleTexture).toBe(textures[1])
+  const zeros = new Uint8Array(16 * 16 * 4)
+  for (const texture of textures) {
+    expect(readTexture(gl, texture, 16, 16)).toEqual(zeros)
+  }
   expect(gl.getError()).toBe(gl.NO_ERROR)
   visualiser.destruct()
 })
