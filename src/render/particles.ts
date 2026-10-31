@@ -85,10 +85,11 @@ export class ParticleRenderer {
     gl.deleteBuffer(this.positionBuffer)
     gl.deleteBuffer(this.texCoordBuffer)
     gl.deleteVertexArray(this.vertexArray)
+    gl.deleteTexture(this.particleTexture)
+    gl.deleteTexture(this.particleDataTexture)
+    gl.deleteTexture(this.particleAgeTexture)
+    // The shader program is shared between the particle and sprite renderers.
     if (doDeleteSharedResources) {
-      gl.deleteTexture(this.particleTexture)
-      gl.deleteTexture(this.particleDataTexture)
-      gl.deleteTexture(this.particleAgeTexture)
       this.program.destruct()
     }
   }
@@ -114,6 +115,9 @@ export class ParticleRenderer {
   }
 
   setParticleTexture(texture: WebGLTexture): void {
+    if (texture !== this.particleTexture) {
+      this.program.gl.deleteTexture(this.particleTexture)
+    }
     this.particleTexture = texture
   }
 
