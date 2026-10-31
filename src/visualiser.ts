@@ -234,12 +234,7 @@ export class StreamlineVisualiser {
 
     // Create textures to render the particle trails into, and associate them
     // with the texture renderer's frame buffer.
-    this.previousParticleTexture = this.createZeroTexture()
-    this.currentParticleTexture = this.createZeroTexture()
-    this.textureRenderer.resetParticleTextures(
-      this.previousParticleTexture,
-      this.currentParticleTexture
-    )
+    this.resetParticleTextures()
   }
 
   start(): void {
@@ -256,7 +251,10 @@ export class StreamlineVisualiser {
   destruct(): void {
     if (this.textureRenderer) this.textureRenderer.destruct()
     if (this.particlePropagator) this.particlePropagator.destruct()
-    if (this.particleRenderer) this.particleRenderer.destruct()
+    // The sprite renderer shares its shader program with the particle
+    // renderer, so only let the latter delete it.
+    if (this.spriteRenderer) this.spriteRenderer.destruct(false)
+    if (this.particleRenderer) this.particleRenderer.destruct(true)
     if (this.finalRenderer) this.finalRenderer.destruct()
     this.gl.deleteTexture(this.previousParticleTexture)
     this.gl.deleteTexture(this.currentParticleTexture)
@@ -275,8 +273,7 @@ export class StreamlineVisualiser {
     this.width = width
     this.height = height
 
-    this.previousParticleTexture = this.createZeroTexture()
-    this.currentParticleTexture = this.createZeroTexture()
+    this.resetParticleTextures()
 
     this.particlePropagator.setDimensions(width, height)
     this.particleRenderer.setDimensions(width, height)
@@ -717,6 +714,14 @@ export class StreamlineVisualiser {
     // Reset particle positions and ages.
     this.particlePropagator?.resetBuffers()
     // Reset rendered particle textures.
+    this.resetParticleTextures()
+  }
+
+  private resetParticleTextures(): void {
+    // Replace the particle trail textures with new zero-initialised ones of the
+    // current size, and attach them to the texture renderer's frame buffers.
+    this.gl.deleteTexture(this.previousParticleTexture)
+    this.gl.deleteTexture(this.currentParticleTexture)
     this.previousParticleTexture = this.createZeroTexture()
     this.currentParticleTexture = this.createZeroTexture()
     this.textureRenderer?.resetParticleTextures(

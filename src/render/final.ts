@@ -108,11 +108,13 @@ export class FinalRenderer {
 
   setVelocityImage(velocityImage: VelocityImage) {
     this.velocityImage = velocityImage
+    this.program.gl.deleteTexture(this.velocityTexture)
     this.velocityTexture = velocityImage.toTexture(this.program.gl, false)
   }
 
   setColorMap(colormap: Colormap) {
     this.colormap = colormap
+    this.program.gl.deleteTexture(this.colormapTexture)
     this.colormapTexture = this.colormap.toTexture(
       this.program.gl,
       FinalRenderer.NUM_SEGMENTS_COLORMAP

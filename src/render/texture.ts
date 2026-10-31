@@ -42,6 +42,7 @@ export class TextureRenderer {
     gl.deleteBuffer(this.positionBuffer)
     gl.deleteBuffer(this.texCoordBuffer)
     gl.deleteVertexArray(this.vertexArray)
+    gl.deleteFramebuffer(this.previousFramebuffer)
     gl.deleteFramebuffer(this.currentFramebuffer)
     this.program.destruct()
   }
