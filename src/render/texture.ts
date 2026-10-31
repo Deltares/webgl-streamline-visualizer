@@ -55,6 +55,11 @@ export class TextureRenderer {
     this.setupFramebuffer(this.currentFramebuffer, currentParticleTexture)
   }
 
+  clearParticleTextures(): void {
+    this.clearFramebuffer(this.previousFramebuffer)
+    this.clearFramebuffer(this.currentFramebuffer)
+  }
+
   render(inputTexture: WebGLTexture, fadeAmount: number): void {
     const gl = this.program.gl
     this.program.use()
@@ -89,8 +94,17 @@ export class TextureRenderer {
       texture,
       0
     )
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    // The texture's storage is uninitialised, so clear it.
+    this.clearFramebuffer(framebuffer)
+  }
+
+  private clearFramebuffer(framebuffer: WebGLFramebuffer): void {
+    const gl = this.program.gl
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
     gl.clearColor(0.0, 0.0, 0.0, 0.0)
     gl.disable(gl.BLEND)
+    gl.clear(gl.COLOR_BUFFER_BIT)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   }
 }
