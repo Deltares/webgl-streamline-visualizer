@@ -1,11 +1,11 @@
 import particleVertexShaderSource from './shaders/particle.vert.glsl'
 import renderVertexShaderSource from './shaders/render.vert.glsl'
-import textureVertexShaderSource from './shaders/texture.vert.glsl'
+import fadeVertexShaderSource from './shaders/fade.vert.glsl'
 import finalVertexShaderSource from './shaders/final.vert.glsl'
 
 import placeholderFragmentShaderSource from './shaders/placeholder.frag.glsl'
 import renderFragmentShaderSource from './shaders/render.frag.glsl'
-import textureFragmentShaderSource from './shaders/texture.frag.glsl'
+import fadeFragmentShaderSource from './shaders/fade.frag.glsl'
 import finalFragmentShaderSource from './shaders/final.frag.glsl'
 
 import { ShaderProgram } from './utils/shader-program'
@@ -13,10 +13,10 @@ import { SpeedCurve } from './utils/speedcurve'
 import { createTexture } from './utils/textures'
 import {
   StreamlineStyle,
+  FadeRenderer,
   FinalRenderer,
   ParticlePropagator,
-  ParticleRenderer,
-  TextureRenderer
+  ParticleRenderer
 } from './render'
 import type { VelocityImage } from './utils/velocity-image'
 import type { Colormap } from './utils/colormap'
@@ -72,15 +72,14 @@ export class StreamlineVisualiser {
   private programRenderParticles: ShaderProgram | null
   private _options: StreamlineVisualiserOptions
 
-  private textureRenderer: TextureRenderer | null
+  private fadeRenderer: FadeRenderer | null
   private particlePropagator: ParticlePropagator | null
   private particleRenderer: ParticleRenderer | null
   private finalRenderer: FinalRenderer | null
   private spriteRenderer: ParticleRenderer | null
 
   private scaling: BoundingBoxScaling
-  private previousParticleTexture: WebGLTexture | null
-  private currentParticleTexture: WebGLTexture | null
+  private trailTexture: WebGLTexture | null
   private velocityImage: VelocityImage | null
   private colorMap: Colormap | null
   private dtMin: number
@@ -100,15 +99,14 @@ export class StreamlineVisualiser {
     this.programRenderParticles = null
     this._options = { ...options }
 
-    this.textureRenderer = null
+    this.fadeRenderer = null
     this.particlePropagator = null
     this.particleRenderer = null
     this.finalRenderer = null
     this.spriteRenderer = null
 
     this.scaling = { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 }
-    this.previousParticleTexture = null
-    this.currentParticleTexture = null
+    this.trailTexture = null
     this.velocityImage = null
     this.colorMap = null
     this.dtMin = 0
@@ -158,7 +156,7 @@ export class StreamlineVisualiser {
     const [
       programUpdateParticles,
       programRenderParticles,
-      programRenderTexture,
+      programFade,
       programRenderFinal
     ] = await this.compileShaderPrograms()
 
@@ -176,7 +174,7 @@ export class StreamlineVisualiser {
     )
 
     // Create and the renderers for the different stages of the visualisation.
-    this.textureRenderer = new TextureRenderer(programRenderTexture)
+    this.fadeRenderer = new FadeRenderer(programFade)
     this.particlePropagator = new ParticlePropagator(
       programUpdateParticles,
       this.width,
@@ -207,7 +205,7 @@ export class StreamlineVisualiser {
       this._options.particleOverlayOpacity
     )
 
-    this.textureRenderer.initialise()
+    this.fadeRenderer.initialise()
     this.particlePropagator.initialise()
     this.particleRenderer.initialise()
     this.finalRenderer.initialise()
@@ -232,9 +230,9 @@ export class StreamlineVisualiser {
       this.spriteRenderer.initialise()
     }
 
-    // Create textures to render the particle trails into, and associate them
-    // with the texture renderer's frame buffer.
-    this.resetParticleTextures()
+    // Create a texture to render the particle trails into, and attach it to the
+    // fade renderer's frame buffer.
+    this.resetTrailTexture()
   }
 
   start(): void {
@@ -249,15 +247,14 @@ export class StreamlineVisualiser {
   }
 
   destruct(): void {
-    if (this.textureRenderer) this.textureRenderer.destruct()
+    if (this.fadeRenderer) this.fadeRenderer.destruct()
     if (this.particlePropagator) this.particlePropagator.destruct()
     // The sprite renderer shares its shader program with the particle
     // renderer, so only let the latter delete it.
     if (this.spriteRenderer) this.spriteRenderer.destruct(false)
     if (this.particleRenderer) this.particleRenderer.destruct(true)
     if (this.finalRenderer) this.finalRenderer.destruct()
-    this.gl.deleteTexture(this.previousParticleTexture)
-    this.gl.deleteTexture(this.currentParticleTexture)
+    this.gl.deleteTexture(this.trailTexture)
   }
 
   setScaling(scaling: BoundingBoxScaling): void {
@@ -273,7 +270,7 @@ export class StreamlineVisualiser {
     this.width = width
     this.height = height
 
-    this.resetParticleTextures()
+    this.resetTrailTexture()
 
     this.particlePropagator.setDimensions(width, height)
     this.particleRenderer.setDimensions(width, height)
@@ -426,12 +423,11 @@ export class StreamlineVisualiser {
     // Return immediately if we are not rendering.
     if (!this.isRendering) return
     if (
-      !this.textureRenderer ||
+      !this.fadeRenderer ||
       !this.particlePropagator ||
       !this.particleRenderer ||
       !this.finalRenderer ||
-      !this.previousParticleTexture ||
-      !this.currentParticleTexture
+      !this.trailTexture
     ) {
       throw new Error(
         'Visualiser was not initialised before attempting to render frame.'
@@ -447,6 +443,12 @@ export class StreamlineVisualiser {
       this.particlePropagator.resetAges()
     }
 
+    // Fade the particle trails once by an amount proportional to the full time
+    // step. The fade renderer leaves the trail texture bound, so the particles
+    // of all substeps below are rendered on top of it to produce the fading
+    // "comet trails".
+    this.fadeRenderer.render(this.computeFadeAmount(dt))
+
     // Check whether we need to do any substepping.
     const needSubstepping = dt > this.dtMin
     // Never do more than a certain number of substeps.
@@ -455,47 +457,21 @@ export class StreamlineVisualiser {
       : 1
     const dtSub = needSubstepping ? dt / numSubSteps : dt
     for (let i = 0; i < numSubSteps; i++) {
-      // Render the previous particle frame (i.e. a frame with only the
-      // particles, not velocity magnitude colours) to a texture, fading it by
-      // an amount proportional to the current time step.
-      let fadeAmount = this._options.fadeAmountPerSecond * dtSub
-      // We render the alpha channel with 8-bit precision, so we cannot
-      // represent amounts below 1/255. If our fade amount is below this number,
-      // randomly fade the texture by 1/255, with a probability proportional to
-      // the desired fade amount.
-      const fadeAmountMin = 1 / 255
-      if (fadeAmount < fadeAmountMin) {
-        const fadeProbability = fadeAmount / fadeAmountMin
-        fadeAmount = Math.random() < fadeProbability ? fadeAmountMin : 0 // NOSONAR(S2245) - Non-cryptographic random used for visual effect
-      }
-      this.textureRenderer.render(this.previousParticleTexture, fadeAmount)
-
       // Update the particle positions into an output buffer.
       this.particlePropagator.update(dtSub)
 
       // Use the updated particle position to render sprites at those locations.
-      // These particles are rendered on top of the previous particle frame to
-      // produce the fading "comet trails".
       this.particleRenderer.render(this.particlePropagator.buffers)
-
-      // Do not swap at the last time step as we need the latest particle
-      // texture for the final render.
-      if (i < numSubSteps - 1) {
-        this.swapParticleTextures()
-      }
     }
 
     // Finally, render the velocity magnitude with the particles (and trails)
     // blended with it.
-    this.finalRenderer.render(this.currentParticleTexture, this.scaling)
+    this.finalRenderer.render(this.trailTexture, this.scaling)
 
     if (this.spriteRenderer) {
       // Render the sprite in the final position, on top of everything.
       this.spriteRenderer.render(this.particlePropagator.buffers, this.scaling)
     }
-
-    // Swap previous and current particle texture.
-    this.swapParticleTextures()
   }
 
   /**
@@ -503,14 +479,13 @@ export class StreamlineVisualiser {
    * advancing particles. Use this to render world copies at different offsets:
    * call setScaling() with the shifted bbox, then renderCopy().
    *
-   * Must be called after renderFrame() in the same frame. Uses
-   * previousParticleTexture because renderFrame() swaps textures at the end.
+   * Must be called after renderFrame() in the same frame.
    */
   renderCopy(): void {
     if (!this.isRendering) return
-    if (!this.finalRenderer || !this.previousParticleTexture) return
+    if (!this.finalRenderer || !this.trailTexture) return
 
-    this.finalRenderer.render(this.previousParticleTexture, this.scaling)
+    this.finalRenderer.render(this.trailTexture, this.scaling)
 
     if (this.spriteRenderer) {
       this.spriteRenderer.render(this.particlePropagator!.buffers, this.scaling)
@@ -529,10 +504,7 @@ export class StreamlineVisualiser {
       this.gl,
       renderVertexShaderSource
     )
-    const textureVertexShader = new VertexShader(
-      this.gl,
-      textureVertexShaderSource
-    )
+    const fadeVertexShader = new VertexShader(this.gl, fadeVertexShaderSource)
     const finalVertexShader = new VertexShader(this.gl, finalVertexShaderSource)
 
     // Create fragment shaders.
@@ -544,9 +516,9 @@ export class StreamlineVisualiser {
       this.gl,
       renderFragmentShaderSource
     )
-    const textureFragmentShader = new FragmentShader(
+    const fadeFragmentShader = new FragmentShader(
       this.gl,
-      textureFragmentShaderSource
+      fadeFragmentShaderSource
     )
     const finalFragmentShader = new FragmentShader(
       this.gl,
@@ -565,10 +537,10 @@ export class StreamlineVisualiser {
       renderVertexShader,
       renderFragmentShader
     )
-    const programRenderTexture = new ShaderProgram(
+    const programFade = new ShaderProgram(
       this.gl,
-      textureVertexShader,
-      textureFragmentShader
+      fadeVertexShader,
+      fadeFragmentShader
     )
     const programRenderFinal = new ShaderProgram(
       this.gl,
@@ -581,7 +553,7 @@ export class StreamlineVisualiser {
       [
         programUpdateParticles,
         programRenderParticles,
-        programRenderTexture,
+        programFade,
         programRenderFinal
       ].map(program => program.link())
     )
@@ -589,7 +561,7 @@ export class StreamlineVisualiser {
     return [
       programUpdateParticles,
       programRenderParticles,
-      programRenderTexture,
+      programFade,
       programRenderFinal
     ]
   }
@@ -689,40 +661,38 @@ export class StreamlineVisualiser {
     return createTexture(this.gl, this.gl.LINEAR, bitmap, width, height)
   }
 
-  private createTrailTexture(): WebGLTexture {
-    // Only allocate storage; the texture renderer clears it through its frame
-    // buffer, which avoids uploading a screen-sized array of zeros.
-    return createTexture(this.gl, this.gl.LINEAR, null, this.width, this.height)
-  }
-
-  private swapParticleTextures(): void {
-    const temp = this.previousParticleTexture
-    this.previousParticleTexture = this.currentParticleTexture
-    this.currentParticleTexture = temp
-    // Also swap frame buffers in the texture renderer, as those render into the
-    // swapped textures.
-    this.textureRenderer?.swapBuffers()
+  private computeFadeAmount(dt: number): number {
+    const fadeAmount = this._options.fadeAmountPerSecond * dt
+    // We render the alpha channel with 8-bit precision, so we cannot represent
+    // amounts below 1/255. If our fade amount is below this number, randomly
+    // fade the texture by 1/255, with a probability proportional to the
+    // desired fade amount.
+    const fadeAmountMin = 1 / 255
+    if (fadeAmount >= fadeAmountMin) return fadeAmount
+    const fadeProbability = fadeAmount / fadeAmountMin
+    return Math.random() < fadeProbability ? fadeAmountMin : 0 // NOSONAR(S2245) - Non-cryptographic random used for visual effect
   }
 
   private resetParticles(): void {
     // Reset particle positions and ages.
     this.particlePropagator?.resetBuffers()
-    // Clear rendered particle trails; the textures still have the right size.
-    this.textureRenderer?.clearParticleTextures()
+    // Clear rendered particle trails; the texture still has the right size.
+    this.fadeRenderer?.clear()
   }
 
-  private resetParticleTextures(): void {
-    // Replace the particle trail textures with new ones of the current size,
-    // and attach them to the texture renderer's frame buffers, which clears
-    // them.
-    this.gl.deleteTexture(this.previousParticleTexture)
-    this.gl.deleteTexture(this.currentParticleTexture)
-    this.previousParticleTexture = this.createTrailTexture()
-    this.currentParticleTexture = this.createTrailTexture()
-    this.textureRenderer?.resetParticleTextures(
-      this.previousParticleTexture,
-      this.currentParticleTexture
+  private resetTrailTexture(): void {
+    // Replace the particle trail texture with a new one of the current size.
+    // Only allocate its storage; attaching it to the fade renderer's frame
+    // buffer clears it, which avoids uploading a screen-sized array of zeros.
+    this.gl.deleteTexture(this.trailTexture)
+    this.trailTexture = createTexture(
+      this.gl,
+      this.gl.LINEAR,
+      null,
+      this.width,
+      this.height
     )
+    this.fadeRenderer?.setTrailTexture(this.trailTexture)
   }
 
   private updateVelocityImage(velocityImage: VelocityImage): void {
