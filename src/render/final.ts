@@ -1,7 +1,7 @@
-import { Colormap } from '../utils/colormap'
+import type { Colormap } from '../utils/colormap'
 import { createRectangleVertexArray } from '../utils/geometry'
 import { ShaderProgram, bindTexture } from '../utils/shader-program'
-import { VelocityImage } from '../utils/wms'
+import type { VelocityImage } from '../utils/velocity-image'
 
 export interface BoundingBoxScaling {
   scaleX: number

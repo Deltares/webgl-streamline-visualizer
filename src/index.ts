@@ -13,3 +13,5 @@ export {
   type WMSVelocityFieldOptions
 } from './utils/wms'
 export { type BoundingBoxScaling } from './render/final'
+export { Color, Colormap } from './utils/colormap'
+export { VelocityImage } from './utils/velocity-image'

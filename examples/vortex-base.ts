@@ -1,5 +1,4 @@
-import { Colormap } from '@/utils/colormap'
-import { VelocityImage } from '@/utils/wms'
+import { Colormap, VelocityImage } from '@/index'
 import {
   StreamlineVisualiser,
   type StreamlineVisualiserOptions

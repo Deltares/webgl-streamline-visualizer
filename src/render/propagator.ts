@@ -4,7 +4,7 @@ import {
   bindAttribute,
   bindTexture
 } from '../utils/shader-program'
-import { VelocityImage } from '../utils/wms'
+import type { VelocityImage } from '../utils/velocity-image'
 
 export class ParticleBuffers {
   private readonly gl: WebGL2RenderingContext
