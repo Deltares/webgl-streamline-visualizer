@@ -7,6 +7,7 @@ import { createWebGl2Context, readTexture } from './utils'
 
 interface VisualiserInternals {
   trailTexture: WebGLTexture
+  velocityTexture: WebGLTexture
   fadeRenderer: {
     framebuffer: WebGLFramebuffer
     render(fadeAmount: number): void
@@ -94,8 +95,7 @@ test('replaced velocity and colormap textures are deleted', async () => {
   const gl = createWebGl2Context()
   const [visualiser, internals] = await createVisualiser(gl)
   const oldTextures = [
-    internals.particlePropagator.velocityTexture,
-    internals.finalRenderer.velocityTexture,
+    internals.velocityTexture,
     internals.finalRenderer.colormapTexture
   ]
 
@@ -103,8 +103,7 @@ test('replaced velocity and colormap textures are deleted', async () => {
   visualiser.setColorMap(createColormap())
 
   for (const texture of oldTextures) expect(gl.isTexture(texture)).toBe(false)
-  expect(gl.isTexture(internals.particlePropagator.velocityTexture)).toBe(true)
-  expect(gl.isTexture(internals.finalRenderer.velocityTexture)).toBe(true)
+  expect(gl.isTexture(internals.velocityTexture)).toBe(true)
   expect(gl.isTexture(internals.finalRenderer.colormapTexture)).toBe(true)
   expect(gl.getError()).toBe(gl.NO_ERROR)
   visualiser.destruct()
@@ -169,12 +168,24 @@ test('renderFrame renders without errors with substeps', async () => {
   visualiser.destruct()
 })
 
+test('the velocity texture is uploaded once and shared', async () => {
+  const gl = createWebGl2Context()
+  const [visualiser, internals] = await createVisualiser(gl)
+
+  expect(internals.particlePropagator.velocityTexture).toBe(
+    internals.velocityTexture
+  )
+  expect(internals.finalRenderer.velocityTexture).toBe(
+    internals.velocityTexture
+  )
+  visualiser.destruct()
+})
+
 test('destruct deletes all textures and framebuffers', async () => {
   const gl = createWebGl2Context()
   const [visualiser, internals] = await createVisualiser(gl)
   const textures = [
-    internals.particlePropagator.velocityTexture,
-    internals.finalRenderer.velocityTexture,
+    internals.velocityTexture,
     internals.finalRenderer.colormapTexture,
     internals.trailTexture
   ]
