@@ -6,7 +6,19 @@ import { VelocityImage } from './velocity-image'
 
 export type TransformRequestFunction = (request: Request) => Promise<Request>
 
-const pool = new GeoTIFF.Pool()
+// Decoding a viewport-sized 8-bit image is cheap, so a couple of workers
+// suffices.
+const GEOTIFF_POOL_SIZE = 2
+let pool: GeoTIFF.Pool | null = null
+
+/**
+ * Returns the GeoTIFF decoder worker pool, creating it on first use so that
+ * importing this module does not start any workers.
+ */
+function getGeoTiffPool(): GeoTIFF.Pool {
+  pool ??= new GeoTIFF.Pool(GEOTIFF_POOL_SIZE)
+  return pool
+}
 
 /**
  * Fetches a colormap for a WMS layer from the FEWS web services.
@@ -282,7 +294,7 @@ export async function fetchGeoTiffVelocityField(
   try {
     const rasters = await image.readRasters({
       interleave: true,
-      pool,
+      pool: getGeoTiffPool(),
       signal
     })
     if (
