@@ -3,13 +3,15 @@
  *
  * This requires that the data are unsigned 8-bit integers for each channel. Based on the size of
  * the data, we determine whether they are RGB or RGBA; other formats are not supported and will
- * raise an error.
+ * raise an error. If no data are specified, uninitialised RGBA storage is allocated, e.g. to be
+ * cleared or rendered into through a framebuffer.
  *
  * Values are clamped to the edges at both S- and T-boundaries, and interpolation for minification
  * and magnification is done linearly.
  *
  * @param uniform uniform to bind the texture to.
- * @param data data to assign to the texture, must be unsigned 8-bit integers.
+ * @param data data to assign to the texture, must be unsigned 8-bit integers, or null to only
+ *   allocate storage.
  * @param width width of the texture.
  * @param height height of the texture.
  * @returns initialised and bound texture.
@@ -17,7 +19,7 @@
 export function createTexture(
   gl: WebGL2RenderingContext,
   filter: number,
-  data: Uint8Array | Uint8ClampedArray | ImageBitmap,
+  data: Uint8Array | Uint8ClampedArray | ImageBitmap | null,
   width: number,
   height: number
 ): WebGLTexture {
@@ -34,7 +36,10 @@ export function createTexture(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter)
 
-  if (ArrayBuffer.isView(data)) {
+  if (data === null) {
+    // Only allocate storage, without uploading any data.
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, width, height)
+  } else if (ArrayBuffer.isView(data)) {
     const numPixels = width * height
     let format: number
     let internalFormat: number
