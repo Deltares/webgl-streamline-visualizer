@@ -82,7 +82,6 @@ export class FinalRenderer {
     gl.deleteBuffer(this.texCoordBuffer)
     gl.deleteVertexArray(this.vertexArray)
     gl.deleteTexture(this.colormapTexture)
-    gl.deleteTexture(this.velocityTexture)
     this.program.destruct()
   }
 
@@ -106,10 +105,16 @@ export class FinalRenderer {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 
-  setVelocityImage(velocityImage: VelocityImage) {
+  /**
+   * Sets the velocity image and its texture; the texture is owned by the
+   * caller, which is responsible for deleting it.
+   */
+  setVelocityImage(
+    velocityImage: VelocityImage,
+    velocityTexture: WebGLTexture
+  ) {
     this.velocityImage = velocityImage
-    this.program.gl.deleteTexture(this.velocityTexture)
-    this.velocityTexture = velocityImage.toTexture(this.program.gl, false)
+    this.velocityTexture = velocityTexture
   }
 
   setColorMap(colormap: Colormap) {

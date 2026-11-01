@@ -120,7 +120,6 @@ export class ParticlePropagator {
     if (this.outputBuffers) this.outputBuffers.destroy()
 
     gl.deleteTransformFeedback(this.transformFeedback)
-    gl.deleteTexture(this.velocityTexture)
     this.program.destruct()
   }
 
@@ -129,10 +128,16 @@ export class ParticlePropagator {
     this.height = height
   }
 
-  setVelocityImage(velocityImage: VelocityImage): void {
+  /**
+   * Sets the velocity image and its texture; the texture is owned by the
+   * caller, which is responsible for deleting it.
+   */
+  setVelocityImage(
+    velocityImage: VelocityImage,
+    velocityTexture: WebGLTexture
+  ): void {
     this.velocityImage = velocityImage
-    this.program.gl.deleteTexture(this.velocityTexture)
-    this.velocityTexture = velocityImage.toTexture(this.program.gl, false)
+    this.velocityTexture = velocityTexture
   }
 
   setNumParticles(numParticles: number, numParticlesAllocate: number): void {
