@@ -131,6 +131,7 @@ export class ParticlePropagator {
 
   setVelocityImage(velocityImage: VelocityImage): void {
     this.velocityImage = velocityImage
+    this.program.gl.deleteTexture(this.velocityTexture)
     this.velocityTexture = velocityImage.toTexture(this.program.gl, false)
   }
 
