@@ -3,6 +3,7 @@ precision highp float;
 
 uniform int u_style;
 uniform float u_particle_opacity;
+uniform vec3 u_particle_color;
 
 uniform sampler2D u_particle_texture;
 uniform sampler2D u_colormap_texture;
@@ -20,6 +21,7 @@ in vec2 v_flipped_tex_coord;
 out vec4 color;
 
 #include is_missing_velocity;
+#include composite_style;
 
 float get_speed(vec2 pos) {
     vec4 velocity_raw = texture(u_velocity_texture, pos);
@@ -54,35 +56,7 @@ void main() {
         lowp vec4 particle_color = texture(u_particle_texture, v_tex_coord);
 
         // Blend the velocity magnitude texture with the particle texture.
-        if (u_style == 0) {
-            // Render light particles on velocity magnitude.
-            color = mix(
-                magnitude_color,
-                vec4(1.0, 1.0, 1.0, 1.0),
-                particle_color.a * u_particle_opacity
-            );
-        } else if (u_style == 1) {
-            // Render dark particles on velocity magnitude.
-            float factor = 1.0 - particle_color.a * u_particle_opacity;
-            color = magnitude_color;
-            color.rgb *= factor * 0.8 + 0.2;
-        } else if (u_style == 2) {
-            // Render particles coloured by velocity magnitude on transparent
-            // background.
-            color = magnitude_color * particle_color.a;
-            color.a = particle_color.a;
-        } else if (u_style == 3) {
-            // Render coloured particles on velocity magnitude.
-            color = magnitude_color;
-            color.rgb = mix(
-                magnitude_color.rgb,
-                particle_color.rgb,
-                particle_color.a
-            );
-        }  else {
-            // Invalid style, just render transparent pixels.
-            color = vec4(0.0, 0.0, 0.0, 0.0);
-        }
+        color = composite_style(magnitude_color, particle_color);
     } else {
         color = vec4(0.0, 0.0, 0.0, 0.0);
     }

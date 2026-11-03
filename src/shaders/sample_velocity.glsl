@@ -8,7 +8,7 @@ const float SAMPLE_VELOCITY_PI = 3.14159265358979;
 // EPSG:3857 uses the WGS 84 semi-major axis as its sphere radius.
 const float MERCATOR_RADIUS = 6378137.0;
 // Latitude limit of Web Mercator, in radians (85.05112878 degrees).
-const float MERCATOR_MAX_LATITUDE = 1.4844222297;
+const float VELOCITY_MERCATOR_MAX_LATITUDE = 1.4844222297;
 // Float values below this are missing (the uploaded sentinel is -3e38).
 const float MISSING_FLOAT_THRESHOLD = -1.0e38;
 
@@ -40,7 +40,7 @@ vec2 velocity_grid_position(VelocityGrid grid, vec2 lonlat) {
     vec2 xy;
     float period;
     if (grid.crs == VELOCITY_CRS_MERCATOR) {
-        float lat = clamp(lonlat.y, -MERCATOR_MAX_LATITUDE, MERCATOR_MAX_LATITUDE);
+        float lat = clamp(lonlat.y, -VELOCITY_MERCATOR_MAX_LATITUDE, VELOCITY_MERCATOR_MAX_LATITUDE);
         xy = MERCATOR_RADIUS * vec2(
             lonlat.x,
             log(tan(0.25 * SAMPLE_VELOCITY_PI + 0.5 * lat))

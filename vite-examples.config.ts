@@ -20,7 +20,8 @@ export default defineConfig({
         index: resolveRelativePath('index.html'),
         vortex: resolveRelativePath('examples/vortex.html'),
         vortex_sprite: resolveRelativePath('examples/vortex_sprites.html'),
-        maplibre: resolveRelativePath('examples/maplibre.html')
+        maplibre: resolveRelativePath('examples/maplibre.html'),
+        maplibre_globe: resolveRelativePath('examples/maplibre_globe.html')
       }
     }
   },

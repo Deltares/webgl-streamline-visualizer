@@ -21,3 +21,16 @@ export {
   type RegularGrid,
   type RegularGridCrs
 } from './geographic/regular-velocity-chunk'
+export {
+  GeographicStreamlineLayer,
+  type GeographicStreamlineLayerOptions
+} from './geographic/layer'
+export {
+  GeographicStreamlineVisualiser,
+  type GeographicView,
+  type SpawnTable
+} from './geographic/visualiser'
+export {
+  type ProjectionShaderData,
+  type ProjectionUniformData
+} from './geographic/programs'

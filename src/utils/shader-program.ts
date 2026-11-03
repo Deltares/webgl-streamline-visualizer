@@ -19,7 +19,8 @@ export class ShaderProgram {
     gl: WebGL2RenderingContext,
     vertexShader: VertexShader,
     fragmentShader: FragmentShader,
-    transformFeedbackVaryings?: string[]
+    transformFeedbackVaryings?: string[],
+    attributeLocations?: Record<string, number>
   ) {
     // Create WebGL shader program and attach shaders.
     const program = gl.createProgram()
@@ -36,6 +37,14 @@ export class ShaderProgram {
         transformFeedbackVaryings,
         gl.SEPARATE_ATTRIBS
       )
+    }
+
+    // Optionally fix attribute locations, so that vertex arrays can be shared
+    // between programs, e.g. between the projection variants of a program.
+    if (attributeLocations) {
+      for (const [name, location] of Object.entries(attributeLocations)) {
+        gl.bindAttribLocation(program, location, name)
+      }
     }
 
     this.gl = gl
@@ -96,6 +105,17 @@ export class ShaderProgram {
     const location = this.uniforms.get(name)
     if (location === undefined) throw new Error(`No uniform "${name}" exists.`)
     return location
+  }
+
+  /**
+   * Returns the location of a uniform, or null if the program has no active
+   * uniform of that name, e.g. because the compiler removed an unused one.
+   */
+  findUniformLocation(name: string): WebGLUniformLocation | null {
+    if (!this.isLinked) {
+      throw new Error('Link shader program before getting uniform locations.')
+    }
+    return this.uniforms.get(name) ?? null
   }
 
   private async waitForLinking(): Promise<void> {
