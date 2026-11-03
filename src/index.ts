@@ -15,3 +15,9 @@ export {
 export { type BoundingBoxScaling } from './render/final'
 export { Color, Colormap } from './utils/colormap'
 export { VelocityImage } from './utils/velocity-image'
+export {
+  RegularVelocityChunk,
+  MISSING_FLOAT_SENTINEL,
+  type RegularGrid,
+  type RegularGridCrs
+} from './geographic/regular-velocity-chunk'
