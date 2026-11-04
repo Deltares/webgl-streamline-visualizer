@@ -658,8 +658,8 @@ test('builds the domain mesh over the outer cell edges', () => {
 
   const { vertices, indices } = createDomainMeshData(bounds)
   // About one quad per 2°: 70.25° → 36 quads, 42.25° → 22 quads.
-  expect(vertices.length).toBe(2 * 37 * 23)
-  expect(indices.length).toBe(6 * 36 * 22)
+  expect(vertices).toHaveLength(2 * 37 * 23)
+  expect(indices).toHaveLength(6 * 36 * 22)
   expect(Math.max(...indices)).toBe(37 * 23 - 1)
   expect(vertices[0]).toBeCloseTo(bounds.west, 6)
   expect(vertices[1]).toBeCloseTo(bounds.north, 6)

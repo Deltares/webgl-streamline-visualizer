@@ -613,7 +613,7 @@ export class GeographicStreamlineVisualiser {
         ? curve.baseFactor
         : curve.factor * Math.pow(maxSpeed, curve.exponent)
     const pixelsPerSecond = clipSpeed * 0.5 * this.height
-    if (!(pixelsPerSecond > 0)) return Infinity
+    if (Number.isNaN(pixelsPerSecond) || pixelsPerSecond <= 0) return Infinity
     return this._options.maxDisplacement / pixelsPerSecond
   }
 
@@ -725,9 +725,8 @@ export class GeographicStreamlineVisualiser {
       throw new Error('Spawn table must have at least one cell.')
     }
     const sizeChanged =
-      this.spawnTable === null ||
-      this.spawnTable.width !== table.width ||
-      this.spawnTable.height !== table.height
+      this.spawnTable?.width !== table.width ||
+      this.spawnTable?.height !== table.height
     if (sizeChanged || !this.spawnTableTexture) {
       gl.deleteTexture(this.spawnTableTexture)
       this.spawnTableTexture = gl.createTexture()
