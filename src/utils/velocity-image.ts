@@ -48,7 +48,7 @@ export class VelocityImage {
   ): VelocityImage {
     const numPixels = width * height
     if (!Number.isInteger(width) || !Number.isInteger(height)) {
-      throw new Error('Width and height must be integers.')
+      throw new TypeError('Width and height must be integers.')
     }
     if (u.length !== numPixels || v.length !== numPixels) {
       throw new Error(

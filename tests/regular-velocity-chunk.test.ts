@@ -151,7 +151,7 @@ function expectSamplesClose(
   expected: Sample[],
   tolerance: number
 ): void {
-  expect(actual.length).toBe(expected.length)
+  expect(actual).toHaveLength(expected.length)
   actual.forEach((sample, i) => {
     const reference = expected[i]
     if (reference === null || reference === undefined) {
