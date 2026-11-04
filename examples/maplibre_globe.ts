@@ -98,7 +98,7 @@ const layer = new GeographicStreamlineLayer('wind', {
   colormap: createColormap(),
   visualiserOptions: {
     style: StreamlineStyle.LightParticlesOnMagnitude,
-    particleSize: 1.5,
+    particleSize: 3,
     speedFactor: 0.015,
     fadeAmountPerSecond: 3,
     maxDisplacement: 1,

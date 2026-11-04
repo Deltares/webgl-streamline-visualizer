@@ -15,7 +15,7 @@ uniform int u_width;
 uniform highp sampler2D u_particle_data_texture;
 uniform highp sampler2D u_particle_age_texture;
 
-// Particle size and viewport size in pixels.
+// Side of the particle's quad and size of the viewport, in device pixels.
 uniform float u_particle_size;
 uniform vec2 u_viewport_size;
 uniform float u_metres_per_pixel;

@@ -522,9 +522,12 @@ export class GeographicStreamlineVisualiser {
       program.getUniformLocation('u_width'),
       this.widthParticleDataTexture
     )
+    // The quad's side in pixels. As in screen mode, particleSize is its side in
+    // clip units times the width, and clip space is 2 units wide: particles are
+    // particleSize / 2 CSS pixels across.
     gl.uniform1f(
       program.getUniformLocation('u_particle_size'),
-      this._options.particleSize * scalingFactor
+      0.5 * this._options.particleSize * scalingFactor
     )
     gl.uniform2f(
       program.getUniformLocation('u_viewport_size'),

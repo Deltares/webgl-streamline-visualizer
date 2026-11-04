@@ -21,9 +21,14 @@ import {
   type SpawnTable
 } from '@/geographic/visualiser'
 import { StreamlineStyle } from '@/render'
+import type { ParticleRenderer } from '@/render/particles'
 import type { ParticleBuffers } from '@/render/propagator'
 import { Colormap } from '@/utils/colormap'
-import type { StreamlineVisualiserOptions } from '@/visualiser'
+import { TrailParticleShape } from '@/utils/particle-texture'
+import {
+  StreamlineVisualiser,
+  type StreamlineVisualiserOptions
+} from '@/visualiser'
 
 const EARTH_RADIUS = 6371008.8
 const WIDTH = 256
@@ -54,6 +59,13 @@ interface VisualiserInternals {
   outputBuffers: ParticleBuffers
   programs: { get(data: ProjectionShaderData): GeographicPrograms | null }
   propagate(programs: GeographicPrograms, dt: number): void
+  drawParticles(programs: GeographicPrograms, isSprite: boolean): void
+}
+
+interface ScreenVisualiserInternals {
+  particlePropagator: { buffers: ParticleBuffers }
+  particleRenderer: ParticleRenderer
+  spriteRenderer: ParticleRenderer
 }
 
 function createContext(): WebGL2RenderingContext {
@@ -503,6 +515,82 @@ test('respawns particles that leave the screen', async () => {
   // On screen: moved on.
   expect(ages[1]).toBeCloseTo(1 + 1 / 60, 5)
   visualiser.destruct()
+})
+
+/** Width and height in pixels of what was drawn to the default framebuffer. */
+function drawnSize(gl: WebGL2RenderingContext): [number, number] {
+  const pixels = new Uint8Array(4 * WIDTH * HEIGHT)
+  gl.readPixels(0, 0, WIDTH, HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+  let [xMin, xMax, yMin, yMax] = [WIDTH, -1, HEIGHT, -1]
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      if (pixels[4 * (y * WIDTH + x) + 3]! < 128) continue
+      xMin = Math.min(xMin, x)
+      xMax = Math.max(xMax, x)
+      yMin = Math.min(yMin, y)
+      yMax = Math.max(yMax, y)
+    }
+  }
+  return [xMax - xMin + 1, yMax - yMin + 1]
+}
+
+async function createSpriteUrl(): Promise<URL> {
+  const canvas = new OffscreenCanvas(8, 8)
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Failed to create 2D context.')
+  context.fillRect(0, 0, 8, 8)
+  return new URL(URL.createObjectURL(await canvas.convertToBlob()))
+}
+
+test.each([
+  { pass: 'trail particles', isSprite: false },
+  { pass: 'sprites', isSprite: true }
+])('draws $pass at the same size as screen mode', async ({ isSprite }) => {
+  const particleSize = 32
+  const options = createOptions({
+    particleSize,
+    growthRate: 100,
+    trailParticleOptions: { shape: TrailParticleShape.Rectangle, doRotate: false },
+    spriteUrl: isSprite ? await createSpriteUrl() : undefined
+  })
+  const ages = new Float32Array([1])
+
+  // One particle in the middle of the screen, at its full size.
+  const screenGl = createContext()
+  const screen = new StreamlineVisualiser(screenGl, WIDTH, HEIGHT, 1, options)
+  await screen.initialise(createColormap())
+  const screenInternals = screen as unknown as ScreenVisualiserInternals
+  const buffers = screenInternals.particlePropagator.buffers
+  buffers.initialise(new Float32Array([0, 0, 1, 0]), ages)
+  const renderer = isSprite
+    ? screenInternals.spriteRenderer
+    : screenInternals.particleRenderer
+  screenGl.bindFramebuffer(screenGl.FRAMEBUFFER, null)
+  screenGl.viewport(0, 0, WIDTH, HEIGHT)
+  renderer.render(buffers, { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 })
+  const screenSize = drawnSize(screenGl)
+  screen.destruct()
+
+  // The same particle at 0° E, 0° N, which this view puts in the middle too.
+  const geoGl = createContext()
+  const geographic = await createVisualiser(geoGl, 1, options, createColormap())
+  geographic.setView(worldView(5000))
+  writeParticles(geographic, new Float32Array([0, 0, 1, 0]), ages)
+  const geoInternals = geographic as unknown as VisualiserInternals
+  const programs = geoInternals.programs.get(mercatorShaderData)
+  if (!programs) throw new Error('Programs are not ready.')
+  geoGl.bindFramebuffer(geoGl.FRAMEBUFFER, null)
+  geoGl.viewport(0, 0, WIDTH, HEIGHT)
+  geoInternals.drawParticles(programs, isSprite)
+  const geoSize = drawnSize(geoGl)
+  expect(geoGl.getError()).toBe(geoGl.NO_ERROR)
+  geographic.destruct()
+
+  const expectedSize = (particleSize * devicePixelRatio) / 2
+  expect(Math.abs(screenSize[0] - expectedSize)).toBeLessThanOrEqual(1)
+  expect(Math.abs(screenSize[1] - expectedSize)).toBeLessThanOrEqual(1)
+  expect(Math.abs(geoSize[0] - screenSize[0])).toBeLessThanOrEqual(1)
+  expect(Math.abs(geoSize[1] - screenSize[1])).toBeLessThanOrEqual(1)
 })
 
 test('finds the visible world copies from the Mercator matrix', () => {
