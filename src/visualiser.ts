@@ -22,17 +22,19 @@ import type { VelocityImage } from './utils/velocity-image'
 import type { Colormap } from './utils/colormap'
 import type { BoundingBoxScaling } from './render/final'
 import { FragmentShader, VertexShader } from './utils/shader'
+import {
+  type TrailParticleOptions,
+  createParticleTexture,
+  createSpriteTexture,
+  determineDoRotateParticles,
+  parseCssColor
+} from './utils/particle-texture'
 
-export enum TrailParticleShape {
-  Circle = 'circle',
-  Rectangle = 'rectangle'
-}
-
-export interface TrailParticleOptions {
-  shape: TrailParticleShape
-  aspectRatio?: number
-  doRotate?: boolean
-}
+export {
+  TrailParticleShape,
+  type TrailParticleOptions,
+  determineDoRotateParticles
+} from './utils/particle-texture'
 
 export interface StreamlineVisualiserOptions {
   style: StreamlineStyle
@@ -47,17 +49,6 @@ export interface StreamlineVisualiserOptions {
   spriteUrl?: URL
   trailParticleOptions?: TrailParticleOptions
   particleOverlayOpacity?: number
-}
-
-export function determineDoRotateParticles(
-  options: Partial<StreamlineVisualiserOptions>
-): boolean {
-  const configuredDoRotate = options.trailParticleOptions?.doRotate
-  if (configuredDoRotate !== undefined) {
-    return configuredDoRotate
-  }
-  const shape = options.trailParticleOptions?.shape ?? TrailParticleShape.Circle
-  return shape !== TrailParticleShape.Circle
 }
 
 export class StreamlineVisualiser {
@@ -129,13 +120,6 @@ export class StreamlineVisualiser {
     return this.widthParticleDataTexture * this.heightParticleDataTexture
   }
 
-  private get particleTextureSize(): number {
-    // Final particle size in pixels depends on the display scaling, so take
-    // this into account to create the particle texture.
-    const scalingFactor = globalThis.devicePixelRatio ?? 1
-    return Math.ceil(2 * scalingFactor * this.options.particleSize)
-  }
-
   get isInitialised(): boolean {
     return (
       this.particlePropagator !== null &&
@@ -205,6 +189,10 @@ export class StreamlineVisualiser {
       this._options.style,
       colormap,
       this._options.particleOverlayOpacity
+    )
+
+    this.finalRenderer.particleColor = parseCssColor(
+      this._options.particleColor ?? 'black'
     )
 
     this.fadeRenderer.initialise()
@@ -414,6 +402,9 @@ export class StreamlineVisualiser {
     this.finalRenderer.style = this._options.style
     this.finalRenderer.particleOverlayOpacity =
       this._options.particleOverlayOpacity ?? 1.0
+    this.finalRenderer.particleColor = parseCssColor(
+      this._options.particleColor ?? 'black'
+    )
 
     const particleTexture = this.createParticleTexture()
     this.particleRenderer.setParticleTexture(particleTexture)
@@ -595,73 +586,11 @@ export class StreamlineVisualiser {
   }
 
   private createParticleTexture(): WebGLTexture {
-    const width = this.particleTextureSize
-    const height = this.particleTextureSize
-    const canvas = new OffscreenCanvas(width, height)
-    const context = canvas.getContext('2d')
-    if (context === null) {
-      throw new Error('Could not initialise 2D offscreen canvas.')
-    }
-
-    const shape =
-      this._options.trailParticleOptions?.shape ?? TrailParticleShape.Circle
-    const aspectRatio = this._options.trailParticleOptions?.aspectRatio ?? 1
-    const particleColor = this._options.particleColor ?? 'black'
-    if (shape === TrailParticleShape.Circle) {
-      if (aspectRatio !== 1) {
-        console.warn(
-          'Specifying an aspect ratio is not supported circle-shaped trail particles.'
-        )
-      }
-
-      const radius = 0.5 * this.particleTextureSize
-      const x = radius
-      const y = radius
-
-      context.beginPath()
-      context.arc(x, y, radius, 0, 2 * Math.PI, false)
-      context.fillStyle = particleColor
-      context.fill()
-    } else {
-      const relativeWidth = aspectRatio >= 1 ? 1 : aspectRatio //NOSONAR(S7766) - Keep similarity to line below
-      const relativeHeight = aspectRatio <= 1 ? 1 : 1 / aspectRatio
-      const width = relativeWidth * this.particleTextureSize
-      const height = relativeHeight * this.particleTextureSize
-
-      // Put the particle in the centre of the texture.
-      const x = 0.5 * (this.particleTextureSize - width)
-      const y = 0.5 * (this.particleTextureSize - height)
-
-      context.fillStyle = particleColor
-      context.fillRect(x, y, width, height)
-    }
-
-    const data = context.getImageData(0, 0, width, height).data
-    return createTexture(this.gl, this.gl.LINEAR, data, width, height)
+    return createParticleTexture(this.gl, this._options)
   }
 
   private async createSpriteTexture(): Promise<WebGLTexture> {
-    if (!this.options.spriteUrl) {
-      throw new Error(
-        'Cannot create sprite texture if no sprite URL has been specified.'
-      )
-    }
-
-    const sprite = new Image()
-    sprite.src = this.options.spriteUrl.toString()
-    await sprite.decode()
-
-    const width = this.particleTextureSize
-    const height = this.particleTextureSize
-
-    // Note: sprite images will always be squeezed into a square.
-    const bitmap = await createImageBitmap(sprite, {
-      resizeWidth: width,
-      resizeHeight: height,
-      resizeQuality: 'high'
-    })
-
-    return createTexture(this.gl, this.gl.LINEAR, bitmap, width, height)
+    return createSpriteTexture(this.gl, this._options)
   }
 
   private computeFadeAmount(dt: number): number {

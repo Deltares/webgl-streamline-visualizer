@@ -7,6 +7,8 @@ function resolveRelativePath(relative: string): string {
 }
 
 export default defineConfig({
+  // public/ is for the examples; it should not end up in the package.
+  publicDir: false,
   plugins: [
     viteGlslPlugin({
       include: ['**/*.frag.glsl', '**/*.vert.glsl'],

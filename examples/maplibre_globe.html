@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Globe projection demo</title>
+</head>
+
+<body>
+  <main>
+    <div class="controls">
+      <button id="projection" type="button">Switch to Mercator</button>
+      <label>
+        Style
+        <select id="style">
+          <option value="0">Light particles on magnitude</option>
+          <option value="1">Dark particles on magnitude</option>
+          <option value="2">Magnitude-coloured particles</option>
+          <option value="4">Particles only</option>
+        </select>
+      </label>
+    </div>
+    <div id="container"></div>
+  </main>
+  <script type="module" src="/examples/maplibre_globe.ts"></script>
+</body>
+
+</html>

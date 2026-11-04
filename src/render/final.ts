@@ -14,7 +14,12 @@ export enum StreamlineStyle {
   LightParticlesOnMagnitude = 0,
   DarkParticlesOnMagnitude = 1,
   MagnitudeColoredParticles = 2,
-  ColoredParticles = 3
+  ColoredParticles = 3,
+  /**
+   * Particles in their own colour (`particleColor`) on a transparent
+   * background, for maps that already draw the velocity magnitude.
+   */
+  ParticlesOnly = 4
 }
 
 export class FinalRenderer {
@@ -22,6 +27,8 @@ export class FinalRenderer {
 
   public style: StreamlineStyle
   public particleOverlayOpacity: number
+  /** RGB in 0..1, for StreamlineStyle.ParticlesOnly. */
+  public particleColor: [number, number, number] = [0, 0, 0]
 
   private readonly program: ShaderProgram
   private positionBuffer: WebGLBuffer | null
@@ -155,6 +162,11 @@ export class FinalRenderer {
     gl.uniform1f(
       this.program.getUniformLocation('u_particle_opacity'),
       this.particleOverlayOpacity
+    )
+
+    gl.uniform3f(
+      this.program.getUniformLocation('u_particle_color'),
+      ...this.particleColor
     )
 
     // Uniforms for the start and end of the colormap.
