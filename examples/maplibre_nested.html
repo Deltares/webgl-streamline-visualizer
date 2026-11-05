@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nested curvilinear field demo</title>
+</head>
+
+<body>
+  <main>
+    <div class="controls">
+      <button id="projection" type="button">Switch to Mercator</button>
+      <label>
+        Field
+        <select id="field">
+          <option value="nested">Curvilinear nested in regular</option>
+          <option value="inner">Curvilinear only</option>
+          <option value="outer">Regular only</option>
+        </select>
+      </label>
+    </div>
+    <div id="container"></div>
+  </main>
+  <script type="module" src="/examples/maplibre_nested.ts"></script>
+</body>
+
+</html>

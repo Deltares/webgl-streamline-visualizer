@@ -22,6 +22,18 @@ export {
   type RegularGridCrs
 } from './geographic/regular-velocity-chunk'
 export {
+  CurvilinearGrid,
+  CurvilinearVelocityField,
+  type CurvilinearGridOptions,
+  type CurvilinearLocation
+} from './geographic/curvilinear-velocity-field'
+export {
+  NestedVelocityField,
+  MAX_NESTED_FIELDS,
+  type SingleVelocityField,
+  type VelocityField
+} from './geographic/velocity-field'
+export {
   GeographicStreamlineLayer,
   type GeographicStreamlineLayerOptions
 } from './geographic/layer'

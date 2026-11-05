@@ -1,5 +1,9 @@
 import { expect, test } from 'vitest'
 import {
+  CurvilinearGrid,
+  CurvilinearVelocityField
+} from '@/geographic/curvilinear-velocity-field'
+import {
   NORTH_POLE_Y,
   SOUTH_POLE_Y,
   mercatorBoundsOf,
@@ -20,6 +24,7 @@ import {
   type GeographicView,
   type SpawnTable
 } from '@/geographic/visualiser'
+import { NestedVelocityField } from '@/geographic/velocity-field'
 import { StreamlineStyle } from '@/render'
 import type { ParticleRenderer } from '@/render/particles'
 import type { ParticleBuffers } from '@/render/propagator'
@@ -677,4 +682,97 @@ test('builds the domain mesh over the outer cell edges', () => {
   expect(ys[ys.length - 1]).toBe(SOUTH_POLE_Y)
   // The regional grid above does not reach the poles.
   expect(Math.min(...vertices.filter((_, i) => i % 2 === 1))).toBeGreaterThan(0)
+})
+
+test('particles follow a curvilinear field nested in a regular one', async () => {
+  const gl = createContext()
+  gl.getExtension('EXT_color_buffer_float')
+  const numParticles = 2000
+
+  // The inner field blows north over 0..120° E, 0..60° N;
+  // the outer field blows east everywhere.
+  const nx = 61
+  const ny = 31
+  const lon = new Float32Array(nx * ny)
+  const lat = new Float32Array(nx * ny)
+  for (let row = 0; row < ny; row++) {
+    for (let column = 0; column < nx; column++) {
+      lon[row * nx + column] = column * 2
+      lat[row * nx + column] = row * 2
+    }
+  }
+  const grid = new CurvilinearGrid(nx, ny, lon, lat, { lookupSize: 256 })
+  const inner = new CurvilinearVelocityField(
+    grid,
+    new Float32Array(nx * ny).fill(0),
+    new Float32Array(nx * ny).fill(10)
+  )
+  const outer = globalField(() => [10, 0])
+  const field = new NestedVelocityField([inner, outer])
+
+  const visualiser = await createVisualiser(
+    gl,
+    numParticles,
+    createOptions(),
+    createColormap()
+  )
+  visualiser.setVelocityField(field, true)
+  visualiser.setView(worldView(1000))
+  visualiser.start()
+  // Draws the lookup texture, and exercises every pass.
+  visualiser.renderFrame(0.01)
+  expect(gl.getError()).toBe(gl.NO_ERROR)
+
+  const internals = visualiser as unknown as VisualiserInternals
+  const programs = internals.programs.get(mercatorShaderData)
+  expect(programs).not.toBeNull()
+  internals.propagate(programs!, 0.01)
+
+  const { data } = readParticles(gl, visualiser, numParticles)
+  let numInner = 0
+  let numOuter = 0
+  for (let i = 0; i < numParticles; i++) {
+    const lonDegrees = (data[4 * i]! * 180) / Math.PI
+    const latDegrees = (data[4 * i + 1]! * 180) / Math.PI
+    const east = data[4 * i + 2]!
+    const north = data[4 * i + 3]!
+    if (east === 0 && north === 0) continue
+    // Stay clear of the boundary, where a particle has just crossed it.
+    const margin = 1
+    const isInside =
+      lonDegrees > margin &&
+      lonDegrees < 120 - margin &&
+      latDegrees > margin &&
+      latDegrees < 60 - margin
+    const isOutside =
+      lonDegrees < -margin ||
+      lonDegrees > 120 + margin ||
+      latDegrees < -margin ||
+      latDegrees > 60 + margin
+    if (isInside) {
+      numInner++
+      expect(Math.abs(east)).toBeLessThan(1e-3 * north)
+    } else if (isOutside) {
+      numOuter++
+      expect(Math.abs(north)).toBeLessThan(1e-3 * east)
+    }
+  }
+  expect(numInner).toBeGreaterThan(50)
+  expect(numOuter).toBeGreaterThan(50)
+
+  // A new lead time on the same grid needs no new lookup.
+  visualiser.setVelocityField(
+    new NestedVelocityField([
+      new CurvilinearVelocityField(
+        grid,
+        new Float32Array(nx * ny).fill(10),
+        new Float32Array(nx * ny).fill(0)
+      ),
+      outer
+    ]),
+    false
+  )
+  visualiser.renderFrame(0.01)
+  expect(gl.getError()).toBe(gl.NO_ERROR)
+  visualiser.destruct()
 })

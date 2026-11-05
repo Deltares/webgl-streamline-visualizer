@@ -6,7 +6,7 @@ import type {
 
 import type { Colormap } from '../utils/colormap'
 import type { StreamlineVisualiserOptions } from '../visualiser'
-import type { RegularVelocityChunk } from './regular-velocity-chunk'
+import type { VelocityField } from './velocity-field'
 import { GeographicStreamlineVisualiser, type SpawnTable } from './visualiser'
 
 export interface GeographicStreamlineLayerOptions {
@@ -49,7 +49,7 @@ export class GeographicStreamlineLayer implements CustomLayerInterface {
   private map: Map | null = null
   private _visualiser: GeographicStreamlineVisualiser | null = null
   private initialisation: Promise<void> | null = null
-  private field: RegularVelocityChunk | null = null
+  private field: VelocityField | null = null
 
   private previousMatrix: Float64Array | null = null
   private previousTransition = Number.NaN
@@ -117,7 +117,7 @@ export class GeographicStreamlineLayer implements CustomLayerInterface {
    *   (the default), particles move on in the new field, e.g. for a new time.
    */
   setVelocityField(
-    field: RegularVelocityChunk,
+    field: VelocityField,
     doResetParticles: boolean = false
   ): void {
     this.field = field
@@ -281,7 +281,7 @@ export class GeographicStreamlineLayer implements CustomLayerInterface {
  */
 export function buildSpawnTable(
   map: Map,
-  field: RegularVelocityChunk,
+  field: VelocityField,
   cssWidth: number,
   cssHeight: number,
   size: number,

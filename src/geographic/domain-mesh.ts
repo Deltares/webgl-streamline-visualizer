@@ -1,4 +1,6 @@
+import { CurvilinearVelocityField } from './curvilinear-velocity-field'
 import type { RegularVelocityChunk } from './regular-velocity-chunk'
+import { NestedVelocityField, type VelocityField } from './velocity-field'
 
 /** A rectangle in Web Mercator 0..1, with y running from north to south. */
 export interface MercatorBounds {
@@ -27,8 +29,41 @@ function mercatorYToLatitude(y: number): number {
   return (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI
 }
 
-/** Returns the outer cell edges of a chunk's grid in Web Mercator 0..1. */
-export function mercatorBoundsOf(chunk: RegularVelocityChunk): MercatorBounds {
+/**
+ * Returns the area a field covers in Web Mercator 0..1: the outer cell edges of
+ * a regular grid, the outermost cell centres of a curvilinear one, and the
+ * union of these for nested fields.
+ */
+export function mercatorBoundsOf(field: VelocityField): MercatorBounds {
+  if (field instanceof NestedVelocityField) {
+    return field.fields.map(mercatorBoundsOf).reduce(unionOfBounds)
+  }
+  if (field instanceof CurvilinearVelocityField) {
+    const { west, east, south, north } = field.grid
+    return {
+      west: west / 360 + 0.5,
+      east: east / 360 + 0.5,
+      north: latitudeToMercatorY(north),
+      south: latitudeToMercatorY(south)
+    }
+  }
+  return mercatorBoundsOfChunk(field)
+}
+
+function unionOfBounds(a: MercatorBounds, b: MercatorBounds): MercatorBounds {
+  // Longitudes may differ by whole turns; bring b to a's side of the earth.
+  const shift = Math.round(0.5 * (a.west + a.east - b.west - b.east))
+  const west = Math.min(a.west, b.west + shift)
+  const east = Math.max(a.east, b.east + shift)
+  return {
+    west,
+    east: Math.min(east, west + 1),
+    north: Math.min(a.north, b.north),
+    south: Math.max(a.south, b.south)
+  }
+}
+
+function mercatorBoundsOfChunk(chunk: RegularVelocityChunk): MercatorBounds {
   const { crs, nx, ny, x0, y0, dx, dy } = chunk.grid
   const westEdge = x0 - 0.5 * dx
   const eastEdge = x0 + (nx - 0.5) * dx

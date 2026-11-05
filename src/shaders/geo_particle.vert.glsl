@@ -5,16 +5,16 @@
 
 precision highp float;
 precision highp int;
+precision highp sampler2D;
 
 #include is_missing_velocity;
 #include sample_velocity;
+#include sample_curvilinear;
+#include sample_field;
 #include sphere;
 
-uniform sampler2D u_velocity_values;
-uniform VelocityGrid u_velocity_grid;
-
 // Maps the screen to the sphere: unit vector in xyz, spawn probability in w.
-uniform highp sampler2D u_spawn_table;
+uniform sampler2D u_spawn_table;
 uniform ivec2 u_spawn_table_size;
 uniform uint u_seed;
 
@@ -92,7 +92,7 @@ bool spawn(inout uint state, out vec2 position) {
 // where the field is missing.
 vec2 scaled_velocity(vec2 position) {
     vec2 velocity;
-    if (!sample_velocity(u_velocity_values, u_velocity_grid, position, velocity)) {
+    if (!sample_field(position, velocity)) {
         return vec2(0.0);
     }
     float speed = length(velocity);

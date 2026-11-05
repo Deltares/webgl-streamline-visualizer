@@ -1,9 +1,12 @@
 #version 300 es
 precision highp float;
 precision highp int;
+precision highp sampler2D;
 
 #include is_missing_velocity;
 #include sample_velocity;
+#include sample_curvilinear;
+#include sample_field;
 
 uniform int u_style;
 uniform float u_particle_opacity;
@@ -11,8 +14,6 @@ uniform vec3 u_particle_color;
 
 uniform sampler2D u_particle_texture;
 uniform sampler2D u_colormap_texture;
-uniform sampler2D u_velocity_values;
-uniform VelocityGrid u_velocity_grid;
 
 uniform float u_colormap_start;
 uniform float u_colormap_end;
@@ -27,7 +28,7 @@ void main() {
     vec2 lonlat = v_lonlat;
 
     vec2 velocity;
-    if (!sample_velocity(u_velocity_values, u_velocity_grid, lonlat, velocity)) {
+    if (!sample_field_coarse(lonlat, velocity)) {
         color = vec4(0.0);
         return;
     }

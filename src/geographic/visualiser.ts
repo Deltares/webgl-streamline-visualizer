@@ -19,6 +19,7 @@ import {
 import { SpeedCurve } from '../utils/speedcurve'
 import { createTexture } from '../utils/textures'
 import type { StreamlineVisualiserOptions } from '../visualiser'
+import { CurvilinearLookupBuilder } from './curvilinear-lookup'
 import { createDomainMeshData, mercatorBoundsOf } from './domain-mesh'
 import {
   ATTRIBUTE_LOCATIONS,
@@ -28,7 +29,7 @@ import {
   type ProjectionUniformData,
   setProjectionUniforms
 } from './programs'
-import type { RegularVelocityChunk } from './regular-velocity-chunk'
+import { VelocityFieldTextures, type VelocityField } from './velocity-field'
 
 /**
  * Maps the screen to the sphere, for spawning particles.
@@ -105,8 +106,8 @@ export class GeographicStreamlineVisualiser {
   private colormapTexture: WebGLTexture | null = null
   private speedCurve: SpeedCurve | null = null
 
-  private field: RegularVelocityChunk | null = null
-  private velocityTexture: WebGLTexture | null = null
+  private field: VelocityField | null = null
+  private fieldTextures: VelocityFieldTextures | null = null
   private dtMin = Infinity
 
   private view: GeographicView | null = null
@@ -142,7 +143,7 @@ export class GeographicStreamlineVisualiser {
   }
 
   /** The velocity field, or null if none has been set. */
-  get velocityField(): RegularVelocityChunk | null {
+  get velocityField(): VelocityField | null {
     return this.field
   }
 
@@ -164,6 +165,10 @@ export class GeographicStreamlineVisualiser {
     await programFade.link()
     this.fadeRenderer = new FadeRenderer(programFade)
     this.fadeRenderer.initialise()
+    this.fieldTextures = new VelocityFieldTextures(
+      gl,
+      await CurvilinearLookupBuilder.create(gl)
+    )
 
     this.transformFeedback = gl.createTransformFeedback()
     this.createQuad()
@@ -197,6 +202,7 @@ export class GeographicStreamlineVisualiser {
     const gl = this.gl
     this.programs.destruct()
     this.fadeRenderer?.destruct()
+    this.fieldTextures?.destruct()
     this.inputBuffers?.destroy()
     this.outputBuffers?.destroy()
     gl.deleteTransformFeedback(this.transformFeedback)
@@ -207,7 +213,6 @@ export class GeographicStreamlineVisualiser {
       this.particleTexture,
       this.spriteTexture,
       this.colormapTexture,
-      this.velocityTexture,
       this.spawnTableTexture
     ]) {
       gl.deleteTexture(texture)
@@ -251,26 +256,25 @@ export class GeographicStreamlineVisualiser {
   /**
    * Sets the velocity field. Its values are uploaded once.
    *
-   * @param field the new field.
+   * @param field the new field. Fields that share a curvilinear grid share its
+   *   coordinates and lookup texture, so changing lead times is cheap.
    * @param doResetParticles whether to restart all particles and clear their
    *   trails; when false, particles move on in the new field.
    */
   setVelocityField(
-    field: RegularVelocityChunk,
+    field: VelocityField,
     doResetParticles: boolean
   ): void {
-    if (!this.isInitialised) {
+    if (!this.isInitialised || !this.fieldTextures) {
       throw new Error('Cannot set velocity field for uninitialised visualiser.')
     }
-    const gl = this.gl
     const domainChanged =
       this.field === null ||
       JSON.stringify(mercatorBoundsOf(this.field)) !==
         JSON.stringify(mercatorBoundsOf(field))
 
     this.field = field
-    gl.deleteTexture(this.velocityTexture)
-    this.velocityTexture = field.createTexture(gl)
+    this.fieldTextures.setField(field)
     if (domainChanged) this.createMesh(field)
     this.dtMin = this.computeMinimumTimeStep()
 
@@ -328,7 +332,7 @@ export class GeographicStreamlineVisualiser {
    */
   renderFrame(dt: number): void {
     if (!this.isRendering || !this.view || !this.field) return
-    if (!this.fadeRenderer || !this.trailTexture) {
+    if (!this.fadeRenderer || !this.trailTexture || !this.fieldTextures) {
       throw new Error(
         'Visualiser was not initialised before attempting to render frame.'
       )
@@ -337,6 +341,10 @@ export class GeographicStreamlineVisualiser {
     if (!programs) return
 
     const gl = this.gl
+    // A new curvilinear grid is drawn into its lookup texture here, within the
+    // frame, because MapLibre tracks its own GL state.
+    this.fieldTextures.prepare()
+
     // MapLibre shares the context, so set everything the passes rely on.
     gl.disable(gl.DEPTH_TEST)
     gl.disable(gl.STENCIL_TEST)
@@ -381,13 +389,12 @@ export class GeographicStreamlineVisualiser {
     const gl = this.gl
     const program = programs.propagate
     const view = this.view
-    const field = this.field
     if (
       !view ||
-      !field ||
+      !this.field ||
       !this.inputBuffers ||
       !this.outputBuffers ||
-      !this.velocityTexture ||
+      !this.fieldTextures ||
       !this.spawnTableTexture ||
       !this.speedCurve
     ) {
@@ -423,9 +430,8 @@ export class GeographicStreamlineVisualiser {
     )
     gl.bindBuffer(gl.ARRAY_BUFFER, null)
 
-    bindTexture(program, 'u_velocity_values', 0, this.velocityTexture)
-    bindTexture(program, 'u_spawn_table', 1, this.spawnTableTexture)
-    field.setUniforms(program, 'u_velocity_grid')
+    bindTexture(program, 'u_spawn_table', 0, this.spawnTableTexture)
+    this.fieldTextures.bind(program, 1)
     setProjectionUniforms(program, view.projectionData)
 
     gl.uniform2i(
@@ -563,7 +569,7 @@ export class GeographicStreamlineVisualiser {
       !this.colormap ||
       !this.trailTexture ||
       !this.colormapTexture ||
-      !this.velocityTexture ||
+      !this.fieldTextures ||
       !this.meshVertexArray
     ) {
       return
@@ -577,8 +583,7 @@ export class GeographicStreamlineVisualiser {
     gl.bindVertexArray(this.meshVertexArray)
     bindTexture(program, 'u_particle_texture', 0, this.trailTexture)
     bindTexture(program, 'u_colormap_texture', 1, this.colormapTexture)
-    bindTexture(program, 'u_velocity_values', 2, this.velocityTexture)
-    this.field.setUniforms(program, 'u_velocity_grid')
+    this.fieldTextures.bind(program, 2)
     setProjectionUniforms(program, view.projectionData)
 
     gl.uniform1i(program.getUniformLocation('u_style'), this._options.style)
@@ -780,7 +785,7 @@ export class GeographicStreamlineVisualiser {
     this.quadVertexArray = null
   }
 
-  private createMesh(field: RegularVelocityChunk): void {
+  private createMesh(field: VelocityField): void {
     const gl = this.gl
     this.deleteMesh()
     const { vertices, indices } = createDomainMeshData(mercatorBoundsOf(field))
