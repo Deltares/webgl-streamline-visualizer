@@ -1,7 +1,8 @@
 import './maplibre.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 
-import { Map } from 'maplibre-gl'
+import { Map, setWorkerUrl } from 'maplibre-gl'
 
 import type { WMSStreamlineLayerOptions } from '@/layer'
 import {
@@ -77,6 +78,8 @@ function createStreamlinesLayer(): WMSStreamlineLayer {
 }
 
 function initialise(): void {
+  setWorkerUrl(workerUrl)
+
   const layer = createStreamlinesLayer()
   createMap()
     .then(map => map.addLayer(layer))
